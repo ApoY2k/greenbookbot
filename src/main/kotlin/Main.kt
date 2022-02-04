@@ -4,22 +4,23 @@ import io.github.cdimascio.dotenv.Dotenv
 import net.dv8tion.jda.api.JDABuilder
 import org.slf4j.LoggerFactory
 
-val LOG = LoggerFactory.getLogger("Main")!!
-val ENV = Dotenv.configure().load()!!
-
 fun main(args: Array<String>) {
-    LOG.info("Starting up GreenBookBot")
+    val env = Dotenv.configure().load()!!
+    val log = LoggerFactory.getLogger("Main")!!
 
     try {
-        val jda = JDABuilder.createDefault(ENV["AUTH_TOKEN"])
-            .addEventListeners(
-                ReactionListener(),
-                CommandListener(),
-                DmListener()
-            )
+        log.info("Starting up GreenBookBot")
+
+        val storage = MemoryStorage()
+        val favListener = FavListener(storage)
+        val commandListener = CommandListener()
+
+        val jda = JDABuilder.createDefault(env["AUTH_TOKEN"])
+            .addEventListeners(favListener, commandListener)
             .build()
         jda.awaitReady()
+        initCommands(jda).thenAccept { log.info("Commands initialized") }
     } catch (e: Exception) {
-        LOG.error(e.message, e)
+        log.error(e.message, e)
     }
 }
