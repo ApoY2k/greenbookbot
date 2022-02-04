@@ -15,13 +15,10 @@ fun main(args: Array<String>) {
             .addEventListeners(
                 ReactionListener(),
                 CommandListener(),
+                DmListener()
             )
             .build()
-
         jda.awaitReady()
-
-        CommandListener.init(jda)
-
     } catch (e: Exception) {
         LOG.error(e.message, e)
     }
