@@ -12,7 +12,6 @@ private const val LIST = "list"
 private const val HELP = "help"
 
 class CommandListener : ListenerAdapter() {
-
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         if (event.name == FAV) {
             event.reply("<insert random fav>").submit()
