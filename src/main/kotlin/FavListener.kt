@@ -10,18 +10,13 @@ class FavListener(
 ) : ListenerAdapter() {
     override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
         with(event) {
-            if (reaction.reactionEmote.name != "\uD83D\uDCD7") {
-                return
+            if (reaction.reactionEmote.name == "\uD83D\uDCD7") {
+                addFav(event)
             }
 
-            if (reaction.guild == null) {
-                return
+            if (reaction.reactionEmote.name == "\uD83D\uDDD1") {
+                removeFav(event)
             }
-
-            retrieveUser()
-                .flatMap { user -> user.openPrivateChannel() }
-                .flatMap { channel -> channel.sendMessage("Send tags for the fav (space-separated). Type '-' for no tags") }
-            storage.saveNewFav(userId, guild.id, messageId)
         }
     }
 
@@ -52,6 +47,25 @@ class FavListener(
                     storage.addTagsToRecentFav(author.id, favs)
                         .thenCompose { addReaction("✅").submit() }
                 }
+        }
+    }
+
+    private fun addFav(event: MessageReactionAddEvent) {
+        with(event) {
+            if (reaction.guild == null) {
+                return
+            }
+
+            retrieveUser()
+                .flatMap { user -> user.openPrivateChannel() }
+                .flatMap { channel -> channel.sendMessage("Send tags for the fav (space-separated). Type '-' for no tags") }
+            storage.saveNewFav(userId, guild.id, messageId)
+        }
+    }
+
+    private fun removeFav(event: MessageReactionAddEvent) {
+        with(event) {
+            
         }
     }
 }
