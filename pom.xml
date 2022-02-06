@@ -107,6 +107,11 @@
             <artifactId>dotenv-kotlin</artifactId>
             <version>6.2.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-jdk8</artifactId>
+            <version>1.6.0</version>
+        </dependency>
     </dependencies>
 
 </project>
