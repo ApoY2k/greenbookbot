@@ -11,9 +11,16 @@ class FavListener(
     private val storage: Storage
 ) : ListenerAdapter() {
     override fun onMessageReactionAdd(event: MessageReactionAddEvent) = runBlocking {
-        when (event.reaction.reactionEmote.name) {
-            "\uD83D\uDCD7" -> addFav(event)
-            "\uD83D\uDDD1️" -> removeFav(event)
+        val code = with(event.reaction.reactionEmote) {
+            if (!isEmoji) {
+                return@runBlocking
+            }
+            asCodepoints
+        }
+
+        when (code) {
+            "U+1f4d7" -> addFav(event)
+            "U+1f5d1U+fe0f" -> removeFav(event)
             else -> Unit
         }
     }
@@ -58,12 +65,14 @@ class FavListener(
             .flatMap { user -> user.openPrivateChannel() }
             .flatMap { channel -> channel.sendMessage("Send tags for the fav (space-separated). Type '-' for no tags") }
             .submit()
-        storage.saveNewFav(event.userId, event.guild.id, event.messageId)
+        val message = event.retrieveMessage().submit().await()
+        val author = message.author
+        storage.saveNewFav(event.userId, event.guild.id, event.channel.id, event.messageId, author.id)
     }
 
     private suspend fun removeFav(event: MessageReactionAddEvent) {
         val message = event.retrieveMessage().submit().await()
-        val fav = createFromPosted(message) ?: return
-        storage.removeFav(fav.userId, fav.messageId)
+        val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
+        storage.removeFav(favId)
     }
 }

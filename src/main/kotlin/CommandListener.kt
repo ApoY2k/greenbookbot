@@ -3,6 +3,7 @@ package apoy2k.greenbookbot
 import io.github.cdimascio.dotenv.Dotenv
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -10,6 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import org.slf4j.LoggerFactory
+import java.awt.Color
 
 private const val FAV = "fav"
 private const val LIST = "list"
@@ -23,17 +25,48 @@ class CommandListener(
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) = runBlocking {
         if (event.name == FAV) {
             val tags = event.getOption("tags")?.asString?.split(" ").orEmpty()
-            val fav = storage.getFavs(event.user.id, event.guild?.id, tags).random()
-            // TODO Retrieve message and post
-            // What about posting in PMs with bot?
+            val fav = storage.getFavs(event.user.id, event.guild?.id, tags).randomOrNull()
+
+            if (fav == null) {
+                event.replyEmbeds(EmbedBuilder().setDescription("No favs found").build())
+                    .setEphemeral(true)
+                    .submit().await()
+                return@runBlocking
+            }
+
+            val message = event.jda
+                .guilds.firstOrNull { it.id == fav.guildId }
+                ?.getTextChannelById(fav.channelId)
+                ?.retrieveMessageById(fav.messageId)
+                ?.submit()?.await()
+
+            if (message == null) {
+                event.replyEmbeds(EmbedBuilder().setDescription("Original message could not be found").build())
+                    .setEphemeral(true)
+                    .submit().await()
+                return@runBlocking
+            }
+
+            with(message) {
+                event.replyEmbeds(
+                    EmbedBuilder()
+                        .setAuthor(author.name)
+                        .setColor(Color(0, 255, 0))
+                        .setDescription(contentRaw)
+                        .setFooter(fav.id)
+                        .setTimestamp(timeCreated)
+                        .build()
+                )
+                    .submit().await()
+            }
         }
 
         if (event.name == LIST) {
-            event.reply("<list of tags/favs>").submit()
+            event.reply("<list of tags/favs>").submit().await()
         }
 
         if (event.name == HELP) {
-            event.reply("<help>").submit()
+            event.reply("<help>").submit().await()
         }
     }
 }

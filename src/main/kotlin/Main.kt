@@ -14,7 +14,7 @@ fun main() = runBlocking {
 
         val storage = MemoryStorage()
         val favListener = FavListener(storage)
-        val commandListener = CommandListener()
+        val commandListener = CommandListener(storage)
 
         val jda = JDABuilder.createDefault(env["AUTH_TOKEN"])
             .addEventListeners(favListener, commandListener)
