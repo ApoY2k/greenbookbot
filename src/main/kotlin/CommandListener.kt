@@ -1,7 +1,6 @@
 package apoy2k.greenbookbot
 
 import io.github.cdimascio.dotenv.Dotenv
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -9,90 +8,127 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
-import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import org.slf4j.LoggerFactory
 import java.awt.Color
 
-private const val FAV = "fav"
-private const val LIST = "list"
-private const val HELP = "help"
+private const val COMMAND_FAV = "fav"
+private const val COMMAND_LIST = "list"
+private const val COMMAND_HELP = "help"
+private const val OPTION_TAG = "tag"
 
-private val LOG = LoggerFactory.getLogger("CommandListener")!!
+private const val HELP_TEXT = """
+**GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
+
+**Creating a fav**
+React with :green_book: on any posted message and then set the tags for the fav by replying to the bots message.
+
+**Posting a fav**
+Use the `/fav` command to post a random fav from your whole list.
+If you also add a (space-separated) list of tags, the posted fav will be selected (randomly) only from favs that have any of the provided tags.
+
+**Removing a fav**
+React with :wastebasket: on the posted fav message from the bot.
+
+**Listing favs**
+Use the `/list` command to get a list of all your used tags of all favs.
+As with `/fav`, provide a (space-separated) list of tags to limit the list to only those tags.
+
+**Editing tags on a fav**
+React with :label: on the posted fav to re-set all tags for this fav.
+"""
+
+private val COMMANDS = listOf(
+    Commands.slash(COMMAND_FAV, "Post a fav")
+        .addOption(OptionType.STRING, OPTION_TAG, "Tag(s) to choose fav from"),
+    Commands.slash(COMMAND_LIST, "List all tags and information about the tagged favs")
+        .addOption(OptionType.STRING, OPTION_TAG, "Tag(s) to list for"),
+    Commands.slash(COMMAND_HELP, "Display usage help")
+)
 
 class CommandListener(
     private val storage: Storage
 ) : ListenerAdapter() {
+
+    private val log = LoggerFactory.getLogger(this::class.java)!!
+
+    suspend fun initCommands(jda: JDA, env: Dotenv) {
+        if (env["DEPLOY_COMMANDS_GLOBAL"] == "true") {
+            log.info("Initializing commands globally")
+            jda.updateCommands().addCommands(COMMANDS).await()
+        } else {
+            jda.guilds.forEach {
+                log.info("Initializing commands on guild [$it]")
+                it.updateCommands().addCommands(COMMANDS).await()
+            }
+        }
+    }
+
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) = runBlocking {
-        if (event.name == FAV) {
-            val tags = event.getOption("tags")?.asString?.split(" ").orEmpty()
-            val fav = storage.getFavs(event.user.id, event.guild?.id, tags).randomOrNull()
-
-            if (fav == null) {
-                event.replyEmbeds(EmbedBuilder().setDescription("No favs found").build())
-                    .setEphemeral(true)
-                    .submit().await()
-                return@runBlocking
-            }
-
-            val message = event.jda
-                .guilds.firstOrNull { it.id == fav.guildId }
-                ?.getTextChannelById(fav.channelId)
-                ?.retrieveMessageById(fav.messageId)
-                ?.submit()?.await()
-
-            if (message == null) {
-                event.replyEmbeds(EmbedBuilder().setDescription("Original message could not be found").build())
-                    .setEphemeral(true)
-                    .submit().await()
-                return@runBlocking
-            }
-
-            with(message) {
-                event.replyEmbeds(
-                    EmbedBuilder()
-                        .setAuthor(author.name)
-                        .setColor(Color(0, 255, 0))
-                        .setDescription(contentRaw)
-                        .setFooter(fav.id)
-                        .setTimestamp(timeCreated)
-                        .build()
-                )
-                    .submit().await()
-            }
-        }
-
-        if (event.name == LIST) {
-            event.reply("<list of tags/favs>").submit().await()
-        }
-
-        if (event.name == HELP) {
-            event.reply("<help>").submit().await()
+        when (event.name) {
+            COMMAND_FAV -> postFav(event)
+            COMMAND_HELP -> help(event)
+            COMMAND_LIST -> list(event)
+            else -> Unit
         }
     }
-}
 
-suspend fun initCommands(jda: JDA, dotenv: Dotenv) {
-    if (dotenv["DEPLOY_COMMANDS_GLOBAL"] == "true") {
-        LOG.info("Initializing commands globally")
-        updateCommands(jda.updateCommands())
+    private suspend fun postFav(event: SlashCommandInteractionEvent) {
+        val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
+        val fav = storage
+            .getFavs(event.user.id, event.guild?.id, tags)
+            .randomOrNull()
+            ?: return event.replyError("No favs found")
+
+        val message = event.jda.guilds
+            .firstOrNull { it.id == fav.guildId }
+            ?.getTextChannelById(fav.channelId)
+            ?.retrieveMessageById(fav.messageId)
+            ?.await()
+            ?: return event.replyError("Original message could not be found")
+
+        with(message) {
+            event.replyEmbeds(
+                EmbedBuilder()
+                    .setAuthor(author.name, null, author.avatarUrl)
+                    .setColor(Color(80, 150, 25))
+                    .setDescription(contentRaw)
+                    .setFooter(fav.id)
+                    .setTimestamp(timeCreated)
+                    .build()
+            ).await()
+        }
     }
 
-    jda.guilds.forEach {
-        LOG.info("Initializing commands on guild [$it]")
-        updateCommands(it.updateCommands())
-    }
-}
-
-private suspend fun updateCommands(updateCommands: CommandListUpdateAction) {
-    with(updateCommands) {
-        addCommands(
-            Commands.slash(FAV, "Post a fav")
-                .addOption(OptionType.STRING, "tag", "Tag(s) to choose fav from"),
-            Commands.slash(LIST, "List all tags and information about the tagged favs")
-                .addOption(OptionType.STRING, "tag", "Tag(s) to list for"),
-            Commands.slash(HELP, "Display usage help")
-                .addOption(OptionType.STRING, "function", "Show help for this specific function")
+    private suspend fun help(event: SlashCommandInteractionEvent) {
+        event.replyEmbeds(
+            EmbedBuilder()
+                .setColor(Color(25, 80, 150))
+                .setDescription(HELP_TEXT)
+                .build()
         )
-        submit().await()
+            .setEphemeral(true)
+            .await()
+    }
+
+    private suspend fun list(event: SlashCommandInteractionEvent) {
+        val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ")
+        val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
+
+        if (favs.isEmpty()) {
+            return event.replyError("No favs found")
+        }
+
+        val builder = EmbedBuilder()
+        val tagCount = mutableMapOf<String, Int>()
+        favs
+            .forEach { fav ->
+                fav.tags.forEach {
+                    val count = tagCount[it] ?: 0
+                    tagCount[it] = count + 1
+                }
+            }
+        tagCount.forEach { builder.addField(it.key, it.value.toString(), false) }
+
+        event.replyEmbeds(builder.build()).await()
     }
 }

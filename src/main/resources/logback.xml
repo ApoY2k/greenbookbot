@@ -6,6 +6,8 @@
         </encoder>
     </appender>
 
+    <logger name="net.dv8tion.jda" level="INFO" />
+
     <root level="debug">
         <appender-ref ref="STDOUT"/>
     </root>

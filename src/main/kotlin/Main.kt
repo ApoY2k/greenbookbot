@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 
 fun main() = runBlocking {
     val env = Dotenv.configure().load()!!
-    val log = LoggerFactory.getLogger("Main")!!
+    val log = LoggerFactory.getLogger("apoy2k.greenbot.Main")!!
 
     try {
         log.info("Starting up GreenBookBot")
@@ -20,7 +20,8 @@ fun main() = runBlocking {
             .addEventListeners(favListener, commandListener)
             .build()
         jda.awaitReady()
-        initCommands(jda, env)
+
+        commandListener.initCommands(jda, env)
     } catch (e: Exception) {
         log.error(e.message, e)
     }
