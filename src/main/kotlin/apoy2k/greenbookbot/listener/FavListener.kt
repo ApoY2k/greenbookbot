@@ -76,6 +76,11 @@ class FavListener(
 
         val message = event.retrieveMessage().await()
         val author = message.author
+
+        if (author.isBot) {
+            return
+        }
+
         val favId = storage.saveNewFav(event.userId, event.guild.id, event.channel.id, event.messageId, author.id)
 
         event.retrieveUser()
