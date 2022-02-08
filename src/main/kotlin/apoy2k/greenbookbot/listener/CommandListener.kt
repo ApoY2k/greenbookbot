@@ -83,8 +83,10 @@ class CommandListener(
 
     private suspend fun postFav(event: SlashCommandInteractionEvent) {
         val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
+        val guildIds = event.jda.guilds.map { it.id }
         val fav = storage
             .getFavs(event.user.id, event.guild?.id, tags)
+            .filter { guildIds.contains(it.guildId) }
             .randomOrNull()
             ?: return event.replyError("No favs found")
 
