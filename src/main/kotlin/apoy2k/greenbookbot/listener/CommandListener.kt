@@ -1,6 +1,7 @@
-package apoy2k.greenbookbot
+package apoy2k.greenbookbot.listener
 
-import io.github.cdimascio.dotenv.Dotenv
+import apoy2k.greenbookbot.Env
+import apoy2k.greenbookbot.model.Storage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -38,10 +39,18 @@ React with :label: on the posted fav to re-set all tags for this fav.
 """
 
 private val COMMANDS = listOf(
-    Commands.slash(COMMAND_FAV, "Post a fav")
-        .addOption(OptionType.STRING, OPTION_TAG, "Tag(s) to choose fav from"),
-    Commands.slash(COMMAND_LIST, "List all tags and information about the tagged favs")
-        .addOption(OptionType.STRING, OPTION_TAG, "Tag(s) to list for"),
+    Commands.slash(COMMAND_FAV, "Post a random fav, filtered by the given tags or from all favs")
+        .addOption(
+            OptionType.STRING,
+            OPTION_TAG,
+            "Limit the favs to only include favs with at least one of these (comma-separated) tags"
+        ),
+    Commands.slash(COMMAND_LIST, "List amount of favs per tag")
+        .addOption(
+            OptionType.STRING,
+            OPTION_TAG,
+            "Limit the listed counts to favs with at least one of these (comma-separated) tags"
+        ),
     Commands.slash(COMMAND_HELP, "Display usage help")
 )
 
@@ -51,13 +60,13 @@ class CommandListener(
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
 
-    suspend fun initCommands(jda: JDA, env: Dotenv) {
-        if (env["DEPLOY_COMMANDS_GLOBAL"] == "true") {
+    suspend fun initCommands(jda: JDA, env: Env) {
+        if (env.deployCommandsGobal == "true") {
             log.info("Initializing commands globally")
             jda.updateCommands().addCommands(COMMANDS).await()
         } else {
             jda.guilds.forEach {
-                log.info("Initializing commands on guild [$it]")
+                log.info("Initializing commands on [$it]")
                 it.updateCommands().addCommands(COMMANDS).await()
             }
         }
@@ -111,7 +120,7 @@ class CommandListener(
     }
 
     private suspend fun list(event: SlashCommandInteractionEvent) {
-        val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ")
+        val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
         val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
 
         if (favs.isEmpty()) {
@@ -129,6 +138,9 @@ class CommandListener(
             }
         tagCount.forEach { builder.addField(it.key, it.value.toString(), false) }
 
-        event.replyEmbeds(builder.build()).await()
+        event
+            .replyEmbeds(builder.build())
+            .setEphemeral(true)
+            .await()
     }
 }

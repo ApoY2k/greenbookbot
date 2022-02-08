@@ -1,8 +1,4 @@
 services:
-  app:
-    build:
-      context: .
-
   db:
     image: postgres:14
     ports:

@@ -1,5 +1,6 @@
-package apoy2k.greenbookbot
+package apoy2k.greenbookbot.listener
 
+import apoy2k.greenbookbot.model.Storage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.ChannelType

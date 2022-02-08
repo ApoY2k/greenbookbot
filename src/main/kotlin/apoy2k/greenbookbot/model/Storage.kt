@@ -1,4 +1,4 @@
-package apoy2k.greenbookbot
+package apoy2k.greenbookbot.model
 
 interface Storage {
     suspend fun saveNewFav(userId: String, guildId: String, channelId: String, messageId: String, authorId: String): String

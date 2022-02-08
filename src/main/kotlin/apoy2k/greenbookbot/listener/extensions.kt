@@ -1,4 +1,4 @@
-package apoy2k.greenbookbot
+package apoy2k.greenbookbot.listener
 
 import kotlinx.coroutines.future.await
 import net.dv8tion.jda.api.EmbedBuilder

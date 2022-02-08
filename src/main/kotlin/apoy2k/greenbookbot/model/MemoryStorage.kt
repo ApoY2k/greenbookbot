@@ -1,4 +1,4 @@
-package apoy2k.greenbookbot
+package apoy2k.greenbookbot.model
 
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
@@ -9,17 +9,6 @@ class MemoryStorage : Storage {
     private val log = LoggerFactory.getLogger(this::class.java)!!
     private val storage = ArrayList<Fav>()
 
-    override suspend fun writeTags(favId: String, tags: Collection<String>) {
-        log.info("Adding $tags to fav [$favId]")
-        val fav = storage.firstOrNull { it.id == favId }
-        if (fav == null) {
-            log.warn("No fav found to add tags to")
-            return
-        }
-        fav.tags.clear()
-        fav.tags.addAll(tags)
-    }
-
     override suspend fun saveNewFav(
         userId: String,
         guildId: String,
@@ -27,7 +16,7 @@ class MemoryStorage : Storage {
         messageId: String,
         authorId: String
     ): String {
-        log.info("Saving new fav for user [$userId] on guild [$guildId] channel [$channelId], message [$messageId]")
+        log.info("Creating fav for User[$userId] Guild[$guildId] Channel[$channelId] Message[$messageId]")
         val fav = Fav(
             autoIncrementId.getAndIncrement().toString(),
             userId,
@@ -42,6 +31,7 @@ class MemoryStorage : Storage {
     }
 
     override suspend fun getFavs(userId: String, guildId: String?, tags: Collection<String>): List<Fav> {
+        log.info("Getting favs for User[$userId] Guild[$guildId] Tags$tags")
         return storage
             .filter { it.userId == userId }
             .filter { guildId == null || it.guildId == guildId }
@@ -49,10 +39,27 @@ class MemoryStorage : Storage {
     }
 
     override suspend fun removeFav(favId: String) {
+        log.info("Removing Fav[$favId]")
         storage.removeAll { it.id == favId }
     }
 
+    override suspend fun writeTags(favId: String, tags: Collection<String>) {
+        val fav = getFav(favId)
+        if (fav == null) {
+            log.warn("Fav[$favId] not found")
+            return
+        }
+        log.info("Setting tags of Fav[$favId] to $tags")
+        storage.replaceAll {
+            when (it.id) {
+                favId -> Fav(fav.id, fav.userId, fav.guildId, fav.channelId, fav.messageId, fav.authorId, tags)
+                else -> it
+            }
+        }
+    }
+
     override suspend fun getFav(favId: String): Fav? {
+        log.info("Fetching Fav[$favId]")
         return storage.firstOrNull { it.id == favId }
     }
 }

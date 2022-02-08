@@ -6,9 +6,9 @@
         </encoder>
     </appender>
 
-    <logger name="net.dv8tion.jda" level="INFO" />
+    <logger name="apoy2k.greenbookbot" level="DEBUG"/>
 
-    <root level="debug">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
