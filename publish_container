@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+docker build -t apoy2k/greenbookbot:latest .
+docker push apoy2k/greenbookbot:latest

@@ -13,15 +13,14 @@ import javax.sql.DataSource
 class DbStorage(env: Env) : Storage {
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
-    private val dataSource: HikariDataSource = HikariDataSource()
+    private val dataSource = HikariDataSource().also {
+        it.jdbcUrl = env.dbUrl
+        it.username = env.dbUser
+        it.password = env.dbPassword
+    }
 
     init {
-        dataSource.jdbcUrl = env.dbUrl
-        dataSource.username = env.dbUser
-        dataSource.password = env.dbPassword
-        dataSource.driverClassName = "org.postgresql.Driver"
-
-        // Start connection immediately, so it's ready as soon as the class is loaded
+        // Fetch a connection immediately, so it's ready as soon as the class is loaded
         dataSource.connection
 
         Flyway.configure()
