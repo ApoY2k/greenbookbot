@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.JDABuilder
 import org.slf4j.LoggerFactory
 
 fun main() = runBlocking {
-    val env = Dotenv.configure().load()!!
+    val env = Dotenv.configure().ignoreIfMissing().load()!!
     val log = LoggerFactory.getLogger("apoy2k.greenbot.Main")!!
 
     try {
