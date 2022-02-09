@@ -113,18 +113,33 @@ class CommandListener(
             return event.replyError("Channel [${fav.channelId}] not found on [$guild]")
         }
 
+        log.debug("Retrieving message for [$fav]")
         val message = channel.retrieveMessageById(fav.messageId).await()
 
         with(message) {
-            event.replyEmbeds(
-                EmbedBuilder()
-                    .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
-                    .setColor(Color(80, 150, 25))
-                    .setDescription(contentRaw)
-                    .setFooter(fav.id)
-                    .setTimestamp(timeCreated)
-                    .build()
-            ).await()
+            val builder = EmbedBuilder()
+                .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
+                .setColor(Color(80, 150, 25))
+                .setDescription(contentRaw)
+                .setFooter(fav.id)
+                .setTimestamp(timeCreated)
+
+            val embedImageUrl = attachments
+                .firstOrNull { it.isImage }
+                ?.proxyUrl
+                ?.also { builder.setImage(it) }
+
+            attachments
+                .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
+                .forEach {
+                    var description = ""
+                    if (it.description != null) {
+                        description = "${it.description}: "
+                    }
+                    builder.appendDescription("\n$description${it.proxyUrl}")
+                }
+
+            event.replyEmbeds(builder.build()).await()
         }
     }
 
