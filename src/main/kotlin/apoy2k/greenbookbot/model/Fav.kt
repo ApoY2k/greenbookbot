@@ -29,6 +29,10 @@ data class Fav(
                     .filter { it.isNotBlank() }
             )
     }
+
+    override fun toString(): String {
+        return "Fav[$id](G:$guildId,C:$channelId,M:$messageId)"
+    }
 }
 
 object Favs : Table() {

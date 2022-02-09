@@ -5,6 +5,7 @@ import apoy2k.greenbookbot.model.Storage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.GuildMessageChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -19,6 +20,7 @@ private const val OPTION_TAG = "tag"
 
 private const val HELP_TEXT = """
 **GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
+https://github.com/ApoY2k/greenbookbot
 
 **Creating a fav**
 React with :green_book: on any posted message and then set the tags for the fav by replying to the bots message.
@@ -73,11 +75,16 @@ class CommandListener(
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) = runBlocking {
-        when (event.name) {
-            COMMAND_FAV -> postFav(event)
-            COMMAND_HELP -> help(event)
-            COMMAND_LIST -> list(event)
-            else -> Unit
+        try {
+            when (event.name) {
+                COMMAND_FAV -> postFav(event)
+                COMMAND_HELP -> help(event)
+                COMMAND_LIST -> list(event)
+                else -> Unit
+            }
+        } catch (e: Exception) {
+            event.replyError("GreenBookBot did a whoopsie:\n${e.message ?: "Unknown error"}")
+            log.error(e.message, e)
         }
     }
 
@@ -90,17 +97,28 @@ class CommandListener(
             .randomOrNull()
             ?: return event.replyError("No favs found")
 
-        val message = event.jda.guilds
+        val guild = event.jda.guilds
             .firstOrNull { it.id == fav.guildId }
-            ?.getTextChannelById(fav.channelId)
-            ?.retrieveMessageById(fav.messageId)
-            ?.await()
-            ?: return event.replyError("Original message could not be found")
+            ?: return
+
+        var channel: GuildMessageChannel? = guild.textChannels
+            .firstOrNull { it.id == fav.channelId }
+
+        if (channel == null) {
+            channel = guild.threadChannels
+                .firstOrNull { it.id == fav.channelId }
+        }
+
+        if (channel == null) {
+            return event.replyError("Channel [${fav.channelId}] not found on [$guild]")
+        }
+
+        val message = channel.retrieveMessageById(fav.messageId).await()
 
         with(message) {
             event.replyEmbeds(
                 EmbedBuilder()
-                    .setAuthor(author.name, null, author.avatarUrl)
+                    .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
                     .setColor(Color(80, 150, 25))
                     .setDescription(contentRaw)
                     .setFooter(fav.id)
