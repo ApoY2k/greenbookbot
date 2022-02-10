@@ -1,11 +1,14 @@
 package apoy2k.greenbookbot.listener
 
 import apoy2k.greenbookbot.Env
+import apoy2k.greenbookbot.model.Fav
 import apoy2k.greenbookbot.model.Storage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.GuildMessageChannel
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -17,6 +20,7 @@ private const val COMMAND_FAV = "fav"
 private const val COMMAND_LIST = "list"
 private const val COMMAND_HELP = "help"
 private const val OPTION_TAG = "tag"
+private const val OPTION_ID = "id"
 
 private const val HELP_TEXT = """
 **GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
@@ -46,6 +50,11 @@ private val COMMANDS = listOf(
             OptionType.STRING,
             OPTION_TAG,
             "Limit the favs to only include favs with at least one of these (comma-separated) tags"
+        )
+        .addOption(
+            OptionType.STRING,
+            OPTION_ID,
+            "Post the fav associated with this specific ID"
         ),
     Commands.slash(COMMAND_LIST, "List amount of favs per tag")
         .addOption(
@@ -83,18 +92,29 @@ class CommandListener(
                 else -> Unit
             }
         } catch (e: Exception) {
-            event.replyError("GreenBookBot did a whoopsie:\n${e.message ?: "Unknown error"}")
+            event.replyError("Something did a whoopsie:\n${e.message ?: "Unknown error"}")
             log.error(e.message, e)
         }
     }
 
     private suspend fun postFav(event: SlashCommandInteractionEvent) {
+        val id = event.getOption(OPTION_ID)?.asString.orEmpty()
         val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
         val guildIds = event.jda.guilds.map { it.id }
-        val fav = storage
-            .getFavs(event.user.id, event.guild?.id, tags)
-            .filter { guildIds.contains(it.guildId) }
-            .randomOrNull()
+
+        val candidates = mutableListOf<Fav>()
+        if (id.isNotBlank()) {
+            val fav = storage.getFav(id)
+                ?: return event.replyError("Fav with id [$id] not found")
+            candidates.add(fav)
+        } else {
+            storage
+                .getFavs(event.user.id, event.guild?.id, tags)
+                .filter { guildIds.contains(it.guildId) }
+                .also { candidates.addAll(it) }
+        }
+
+        val fav = candidates.randomOrNull()
             ?: return event.replyError("No favs found")
 
         val guild = event.jda.guilds
@@ -110,11 +130,11 @@ class CommandListener(
         }
 
         if (channel == null) {
-            return event.replyError("Channel [${fav.channelId}] not found on [$guild]")
+            return event.replyError("Channel [${fav.channelId}] not found on [$guild]", fav.id)
         }
 
         log.debug("Retrieving message for [$fav]")
-        val message = channel.retrieveMessageById(fav.messageId).await()
+        val message = retrieveMessage(event, channel, fav) ?: return
 
         with(message) {
             val builder = EmbedBuilder()
@@ -162,7 +182,6 @@ class CommandListener(
             return event.replyError("No favs found")
         }
 
-        val builder = EmbedBuilder()
         val tagCount = mutableMapOf<String, Int>()
         favs
             .forEach { fav ->
@@ -171,11 +190,55 @@ class CommandListener(
                     tagCount[it] = count + 1
                 }
             }
-        tagCount.forEach { builder.addField(it.key, it.value.toString(), false) }
+
+        val embeds = mutableListOf<MessageEmbed>()
+        tagCount
+            .entries
+            .chunked(25)
+            .forEach { chunk ->
+                val builder = EmbedBuilder()
+                chunk.forEach {
+                    builder.addField(it.key, it.value.toString(), true)
+                }
+                embeds.add(builder.build())
+            }
 
         event
-            .replyEmbeds(builder.build())
+            .replyEmbeds(embeds)
             .setEphemeral(true)
             .await()
+    }
+
+    private suspend fun retrieveMessage(
+        event: SlashCommandInteractionEvent,
+        channel: GuildMessageChannel,
+        fav: Fav
+    ): Message? {
+        try {
+            return channel.retrieveMessageById(fav.messageId).await()
+        } catch (e: Exception) {
+            with(e.message.orEmpty()) {
+                if (contains("10008: Unknown Message")) {
+                    event.replyError(
+                        "Fav [${fav.id}] points to a removed message.\n"
+                                + "It will be removed so this doesn't happen again.",
+                        fav.id
+                    )
+                    storage.removeFav(fav.id)
+                    return null
+                }
+
+                if (contains("Missing permission")) {
+                    event.replyError(
+                        "No permission to view message [${fav.messageId}]" +
+                                " in channel [${fav.channelId}].\nCheck your bot privileges.",
+                        fav.id
+                    )
+                    return null
+                }
+            }
+
+            throw e
+        }
     }
 }

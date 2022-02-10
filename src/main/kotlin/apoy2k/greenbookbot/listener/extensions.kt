@@ -8,10 +8,11 @@ import java.awt.Color
 
 suspend fun <T> RestAction<T>.await(): T = this.submit().await()
 
-suspend fun SlashCommandInteractionEvent.replyError(message: String) {
+suspend fun SlashCommandInteractionEvent.replyError(message: String, favId: String? = null) {
     this.replyEmbeds(
         EmbedBuilder()
             .setDescription(message)
+            .setFooter(favId)
             .setColor(Color(150, 25, 25))
             .build()
     )
