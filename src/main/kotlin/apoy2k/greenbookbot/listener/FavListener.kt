@@ -102,7 +102,10 @@ class FavListener(
     private suspend fun removeFav(event: MessageReactionAddEvent) {
         val message = event.retrieveMessage().await()
         val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
-        storage.removeFav(favId)
+        val fav = storage.getFav(favId) ?: return
+        if (fav.userId == event.userId) {
+            storage.removeFav(favId)
+        }
     }
 
     private suspend fun editFav(event: MessageReactionAddEvent) {
