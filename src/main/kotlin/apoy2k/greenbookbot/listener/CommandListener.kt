@@ -135,7 +135,7 @@ class CommandListener(
         }
 
         if (channel == null) {
-            return event.replyError("Channel [${fav.channelId}] not found on [$guild]", fav.id)
+            return event.replyError("Channel not found:\n${fav.url()}", fav.id)
         }
 
         log.debug("Retrieving message for [$fav]")
@@ -235,8 +235,7 @@ class CommandListener(
 
                 if (contains("Missing permission")) {
                     event.replyError(
-                        "No permission to view message [${fav.messageId}]" +
-                                " in channel [${fav.channelId}].\nCheck your bot privileges.",
+                        "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
                         fav.id
                     )
                     return null

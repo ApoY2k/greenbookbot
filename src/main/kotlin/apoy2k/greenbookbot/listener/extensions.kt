@@ -1,5 +1,6 @@
 package apoy2k.greenbookbot.listener
 
+import apoy2k.greenbookbot.model.Fav
 import kotlinx.coroutines.future.await
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -19,3 +20,5 @@ suspend fun SlashCommandInteractionEvent.replyError(message: String, favId: Stri
         .setEphemeral(true)
         .await()
 }
+
+fun Fav.url() = "https://discord.com/channels/${guildId}/${channelId}"
