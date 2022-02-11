@@ -49,7 +49,7 @@ private val COMMANDS = listOf(
         .addOption(
             OptionType.STRING,
             OPTION_TAG,
-            "Limit the favs to only include favs with at least one of these (comma-separated) tags"
+            "Limit the favs to only include favs with at least one of these (space-separated) tags"
         )
         .addOption(
             OptionType.STRING,
@@ -60,7 +60,7 @@ private val COMMANDS = listOf(
         .addOption(
             OptionType.STRING,
             OPTION_TAG,
-            "Limit the listed counts to favs with at least one of these (comma-separated) tags"
+            "Limit the listed counts to favs with at least one of these (space-separated) tags"
         ),
     Commands.slash(COMMAND_HELP, "Display usage help")
 )

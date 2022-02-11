@@ -91,7 +91,7 @@ class FavListener(
                         .setTitle("Add new fav")
                         .setAuthor(message.author.name, null, message.author.avatarUrl)
                         .setDescription(message.contentRaw)
-                        .addField("Send tags for this fav", "`-` or `.` to not add any tags", false)
+                        .addField("Send (space-separated) tags for this fav", "`-` or `.` to not add any tags", false)
                         .setFooter(favId)
                         .build()
                 )
@@ -133,7 +133,7 @@ class FavListener(
                         .setDescription(content)
                         .setFooter(favId)
                         .addField(
-                            "Overwrite tags for this fav",
+                            "Overwrite (space-separated) tags for this fav",
                             "Send `.` to remove all tags from the fav\n" +
                                     "Send `-` to abort the edit and leave tags as is",
                             false
