@@ -6,6 +6,7 @@ import apoy2k.greenbookbot.model.DbStorage
 import apoy2k.greenbookbot.model.MemoryStorage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.LoggerFactory
 
 fun main() = runBlocking {
@@ -29,7 +30,7 @@ fun main() = runBlocking {
             .addEventListeners(favListener, commandListener)
             .build()
         jda.awaitReady()
-
+        jda.presence.setPresence(Activity.watching("out for hot takes"), false)
         commandListener.initCommands(jda, env)
     } catch (e: Exception) {
         log.error(e.message, e)
