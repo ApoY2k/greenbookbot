@@ -7,7 +7,6 @@ import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.GuildMessageChannel
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -115,7 +114,7 @@ class CommandListener(
         val channelId = tokenizedLink[1]
         val messageId = tokenizedLink[2]
         val message = retrieveMessage(event, channelId, messageId)
-        val author = message?.let { getMessageAuthor(it) }
+        val author = message?.let { message.guild.retrieveMember(message.author).await() }
 
         if (message == null || author == null) {
             return event.replyError("No message found at that link!")
@@ -142,11 +141,6 @@ class CommandListener(
         return message
     }
 
-    private suspend fun getMessageAuthor(message: Message): Member? {
-        val author = message.guild.retrieveMember(message.author).await()
-        log.info("Retrieved Author $author")
-        return author
-    }
 
     private suspend fun postFav(event: SlashCommandInteractionEvent) {
         val id = event.getOption(OPTION_ID)?.asString.orEmpty()
