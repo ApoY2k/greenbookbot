@@ -138,7 +138,7 @@ class CommandListener(
     private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
         val channel = event.jda.getTextChannelById(channelId)
         val message = channel?.retrieveMessageById(messageId)?.await()
-        log.info("Retrieved message: ${message?.contentDisplay}")
+        log.info("Retrieved message ${message?.id} from channel $channel")
         return message
     }
 
