@@ -19,8 +19,10 @@ import java.awt.Color
 private const val COMMAND_FAV = "fav"
 private const val COMMAND_LIST = "list"
 private const val COMMAND_HELP = "help"
+private const val COMMAND_QUOTE = "quote"
 private const val OPTION_TAG = "tag"
 private const val OPTION_ID = "id"
+private const val OPTION_MESSAGE_LINK = "link"
 
 private const val HELP_TEXT = """
 **GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
@@ -62,6 +64,11 @@ private val COMMANDS = listOf(
             OPTION_TAG,
             "Limit the listed counts to favs with at least one of these (space-separated) tags"
         ),
+    Commands.slash(COMMAND_QUOTE, "quote message")
+        .addOption(
+            OptionType.STRING,
+            OPTION_MESSAGE_LINK, "Link to message", true
+        ),
     Commands.slash(COMMAND_HELP, "Display usage help")
 )
 
@@ -89,6 +96,7 @@ class CommandListener(
                 COMMAND_FAV -> postFav(event)
                 COMMAND_HELP -> help(event)
                 COMMAND_LIST -> list(event)
+                COMMAND_QUOTE -> quote(event)
                 else -> Unit
             }
         } catch (e: Exception) {
@@ -96,6 +104,43 @@ class CommandListener(
             log.error(e.message, e)
         }
     }
+
+    private suspend fun quote(event: SlashCommandInteractionEvent) {
+        val messageLink = event.getOption(OPTION_MESSAGE_LINK)?.asString.orEmpty()
+        val tokenizedLink = messageLink.substringAfter("discord.com/channels/").split("/")
+        if (tokenizedLink.size != 3) {
+            return event.replyError("No message found at that link!")
+        }
+        val channelId = tokenizedLink[1]
+        val messageId = tokenizedLink[2]
+        val message = retrieveMessage(event, channelId, messageId)
+        val author = message?.let { message.guild.retrieveMember(message.author).await() }
+
+        if (message == null || author == null) {
+            return event.replyError("No message found at that link!")
+        }
+
+        with(message) {
+            val builder = EmbedBuilder()
+                .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
+                .setColor(Color(80, 150, 25))
+                .setDescription(contentRaw)
+                .setTimestamp(timeCreated)
+
+            attachImageToBuilder(builder, message)
+
+            event.replyEmbeds(builder.build()).await()
+        }
+    }
+
+
+    private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
+        val channel = event.jda.getTextChannelById(channelId)?: event.jda.getThreadChannelById(channelId)
+        val message = channel?.retrieveMessageById(messageId)?.await()
+        log.info("Retrieved message ${message?.id} from channel $channel")
+        return message
+    }
+
 
     private suspend fun postFav(event: SlashCommandInteractionEvent) {
         val id = event.getOption(OPTION_ID)?.asString.orEmpty()
@@ -149,6 +194,14 @@ class CommandListener(
                 .setFooter(fav.id)
                 .setTimestamp(timeCreated)
 
+            attachImageToBuilder(builder, message)
+
+            event.replyEmbeds(builder.build()).await()
+        }
+    }
+
+    private fun attachImageToBuilder(builder: EmbedBuilder, message: Message) {
+        with(message) {
             val embedImageUrl = attachments
                 .firstOrNull { it.isImage }
                 ?.proxyUrl
@@ -163,8 +216,6 @@ class CommandListener(
                     }
                     builder.appendDescription("\n$description${it.proxyUrl}")
                 }
-
-            event.replyEmbeds(builder.build()).await()
         }
     }
 
@@ -226,7 +277,7 @@ class CommandListener(
                 if (contains("10008: Unknown Message")) {
                     event.replyError(
                         "Fav [${fav.id}] points to a removed message.\n"
-                                + "It will be removed so this doesn't happen again.",
+                            + "It will be removed so this doesn't happen again.",
                         fav.id
                     )
                     storage.removeFav(fav.id)
