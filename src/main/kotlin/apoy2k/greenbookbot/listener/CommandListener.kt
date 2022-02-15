@@ -109,20 +109,17 @@ class CommandListener(
         val messageLink = event.getOption(OPTION_MESSAGE_LINK)?.asString.orEmpty()
         val tokenizedLink = messageLink.substringAfter("discord.com/channels/").split("/")
         if (tokenizedLink.size != 3) {
-            return event.replyError("No message found at that link!")
+            return event.replyError("Invalid link format!")
         }
+
         val channelId = tokenizedLink[1]
         val messageId = tokenizedLink[2]
         val message = retrieveMessage(event, channelId, messageId)
-        val author = message?.let { message.guild.retrieveMember(message.author).await() }
-
-        if (message == null || author == null) {
-            return event.replyError("No message found at that link!")
-        }
+            ?: return event.replyError("No message found at that link!")
 
         with(message) {
             val builder = EmbedBuilder()
-                .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
+                .setAuthor(author.name, jumpUrl, author.effectiveAvatarUrl)
                 .setColor(Color(80, 150, 25))
                 .setDescription(contentRaw)
                 .setTimestamp(timeCreated)
@@ -133,14 +130,12 @@ class CommandListener(
         }
     }
 
-
     private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
-        val channel = event.jda.getTextChannelById(channelId)?: event.jda.getThreadChannelById(channelId)
+        val channel = event.jda.getTextChannelById(channelId) ?: event.jda.getThreadChannelById(channelId)
         val message = channel?.retrieveMessageById(messageId)?.await()
-        log.info("Retrieved message ${message?.id} from channel $channel")
+        log.info("Retrieved message [${message?.id}] from channel [$channel]")
         return message
     }
-
 
     private suspend fun postFav(event: SlashCommandInteractionEvent) {
         val id = event.getOption(OPTION_ID)?.asString.orEmpty()
@@ -188,7 +183,7 @@ class CommandListener(
 
         with(message) {
             val builder = EmbedBuilder()
-                .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
+                .setAuthor(author.name, message.jumpUrl, author.effectiveAvatarUrl)
                 .setColor(Color(80, 150, 25))
                 .setDescription(contentRaw)
                 .setFooter(fav.id)
