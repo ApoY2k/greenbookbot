@@ -245,6 +245,7 @@ class CommandListener(
         val embeds = mutableListOf<MessageEmbed>()
         tagCount
             .entries
+            .sortedBy { it.key }
             .chunked(25)
             .forEach { chunk ->
                 val builder = EmbedBuilder()
