@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.slf4j.LoggerFactory
 import java.awt.Color
 
+
 private const val COMMAND_FAV = "fav"
 private const val COMMAND_LIST = "list"
 private const val COMMAND_HELP = "help"
@@ -24,6 +25,7 @@ private const val COMMAND_QUOTE = "quote"
 private const val OPTION_TAG = "tag"
 private const val OPTION_ID = "id"
 private const val OPTION_MESSAGE_LINK = "link"
+
 
 private const val HELP_TEXT = """
 **GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
@@ -77,229 +79,229 @@ class CommandListener(
         private val storage: Storage
 ) : ListenerAdapter() {
 
-  private val log = LoggerFactory.getLogger(this::class.java)!!
+    private val log = LoggerFactory.getLogger(this::class.java)!!
 
-  suspend fun initCommands(jda: JDA, env: Env) {
-    if (env.deployCommandsGobal == "true") {
-      log.info("Initializing commands globally")
-      jda.updateCommands().addCommands(COMMANDS).await()
-    } else {
-      jda.guilds.forEach {
-        log.info("Initializing commands on [$it]")
-        it.updateCommands().addCommands(COMMANDS).await()
-      }
-    }
-  }
-
-  override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) = runBlocking {
-    try {
-      when (event.name) {
-        COMMAND_FAV -> postFav(event)
-        COMMAND_HELP -> help(event)
-        COMMAND_LIST -> list(event)
-        COMMAND_QUOTE -> quote(event)
-        else -> Unit
-      }
-    } catch (e: Exception) {
-      event.replyError("Something did a whoopsie:\n${e.message ?: "Unknown error"}")
-      log.error(e.message, e)
-    }
-  }
-
-  private suspend fun quote(event: SlashCommandInteractionEvent) {
-    val messageLink = event.getOption(OPTION_MESSAGE_LINK)?.asString.orEmpty()
-    val tokenizedLink = messageLink.substringAfter("discord.com/channels/").split("/")
-    if (tokenizedLink.size != 3) {
-      return event.replyError("No message found at that link!")
-    }
-    val channelId = tokenizedLink[1]
-    val messageId = tokenizedLink[2]
-    val message = retrieveMessage(event, channelId, messageId)
-    val author = message?.let { getMessageAuthor(it) }
-
-    if (message == null || author == null) {
-      return event.replyError("No message found at that link!")
+    suspend fun initCommands(jda: JDA, env: Env) {
+        if (env.deployCommandsGobal == "true") {
+            log.info("Initializing commands globally")
+            jda.updateCommands().addCommands(COMMANDS).await()
+        } else {
+            jda.guilds.forEach {
+                log.info("Initializing commands on [$it]")
+                it.updateCommands().addCommands(COMMANDS).await()
+            }
+        }
     }
 
-    with(message) {
-      val builder = EmbedBuilder()
-              .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
-              .setColor(Color(80, 150, 25))
-              .setDescription(contentRaw)
-              .setTimestamp(timeCreated)
-
-      attachImageToBuilder(builder, message)
-
-      event.replyEmbeds(builder.build()).await()
-    }
-  }
-
-
-  private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
-    val channel = event.jda.getTextChannelById(channelId)
-    val message = channel?.retrieveMessageById(messageId)?.await()
-    log.info("Retrieved message: ${message?.contentDisplay}")
-    return message
-  }
-
-  private suspend fun getMessageAuthor(message: Message): Member? {
-    val author = message.guild.retrieveMember(message.author).await()
-    log.info("Retrieved Author $author")
-    return author
-  }
-
-  private suspend fun postFav(event: SlashCommandInteractionEvent) {
-    val id = event.getOption(OPTION_ID)?.asString.orEmpty()
-    val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
-    val guildIds = event.jda.guilds.map { it.id }
-
-    val candidates = mutableListOf<Fav>()
-    if (id.isNotBlank()) {
-      val fav = storage.getFav(id)
-              ?: return event.replyError("Fav with id [$id] not found")
-
-      if (fav.userId != event.user.id) {
-        return event.replyError("That fav does not belong to you!")
-      }
-
-      candidates.add(fav)
-    } else {
-      storage
-              .getFavs(event.user.id, event.guild?.id, tags)
-              .filter { guildIds.contains(it.guildId) }
-              .also { candidates.addAll(it) }
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) = runBlocking {
+        try {
+            when (event.name) {
+                COMMAND_FAV -> postFav(event)
+                COMMAND_HELP -> help(event)
+                COMMAND_LIST -> list(event)
+                COMMAND_QUOTE -> quote(event)
+                else -> Unit
+            }
+        } catch (e: Exception) {
+            event.replyError("Something did a whoopsie:\n${e.message ?: "Unknown error"}")
+            log.error(e.message, e)
+        }
     }
 
-    val fav = candidates.randomOrNull()
-            ?: return event.replyError("No favs found")
+    private suspend fun quote(event: SlashCommandInteractionEvent) {
+        val messageLink = event.getOption(OPTION_MESSAGE_LINK)?.asString.orEmpty()
+        val tokenizedLink = messageLink.substringAfter("discord.com/channels/").split("/")
+        if (tokenizedLink.size != 3) {
+            return event.replyError("No message found at that link!")
+        }
+        val channelId = tokenizedLink[1]
+        val messageId = tokenizedLink[2]
+        val message = retrieveMessage(event, channelId, messageId)
+        val author = message?.let { getMessageAuthor(it) }
 
-    val guild = event.jda.guilds
-            .firstOrNull { it.id == fav.guildId }
-            ?: return
+        if (message == null || author == null) {
+            return event.replyError("No message found at that link!")
+        }
 
-    var channel: GuildMessageChannel? = guild.textChannels
-            .firstOrNull { it.id == fav.channelId }
+        with(message) {
+            val builder = EmbedBuilder()
+                    .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
+                    .setColor(Color(80, 150, 25))
+                    .setDescription(contentRaw)
+                    .setTimestamp(timeCreated)
 
-    if (channel == null) {
-      channel = guild.threadChannels
-              .firstOrNull { it.id == fav.channelId }
+            attachImageToBuilder(builder, message)
+
+            event.replyEmbeds(builder.build()).await()
+        }
     }
 
-    if (channel == null) {
-      return event.replyError("Channel not found:\n${fav.url()}", fav.id)
+
+    private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
+        val channel = event.jda.getTextChannelById(channelId)
+        val message = channel?.retrieveMessageById(messageId)?.await()
+        log.info("Retrieved message: ${message?.contentDisplay}")
+        return message
     }
 
-    log.debug("Retrieving message for [$fav]")
-    val message = retrieveMessage(event, channel, fav) ?: return
-
-    with(message) {
-      val builder = EmbedBuilder()
-              .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
-              .setColor(Color(80, 150, 25))
-              .setDescription(contentRaw)
-              .setFooter(fav.id)
-              .setTimestamp(timeCreated)
-
-      attachImageToBuilder(builder, message)
-
-      event.replyEmbeds(builder.build()).await()
+    private suspend fun getMessageAuthor(message: Message): Member? {
+        val author = message.guild.retrieveMember(message.author).await()
+        log.info("Retrieved Author $author")
+        return author
     }
-  }
 
-  private fun attachImageToBuilder(builder: EmbedBuilder, message: Message) {
-    with(message) {
-      val embedImageUrl = attachments
-              .firstOrNull { it.isImage }
-              ?.proxyUrl
-              ?.also { builder.setImage(it) }
+    private suspend fun postFav(event: SlashCommandInteractionEvent) {
+        val id = event.getOption(OPTION_ID)?.asString.orEmpty()
+        val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
+        val guildIds = event.jda.guilds.map { it.id }
 
-      attachments
-              .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
-              .forEach {
-                var description = ""
-                if (it.description != null) {
-                  description = "${it.description}: "
+        val candidates = mutableListOf<Fav>()
+        if (id.isNotBlank()) {
+            val fav = storage.getFav(id)
+                    ?: return event.replyError("Fav with id [$id] not found")
+
+            if (fav.userId != event.user.id) {
+                return event.replyError("That fav does not belong to you!")
+            }
+
+            candidates.add(fav)
+        } else {
+            storage
+                    .getFavs(event.user.id, event.guild?.id, tags)
+                    .filter { guildIds.contains(it.guildId) }
+                    .also { candidates.addAll(it) }
+        }
+
+        val fav = candidates.randomOrNull()
+                ?: return event.replyError("No favs found")
+
+        val guild = event.jda.guilds
+                .firstOrNull { it.id == fav.guildId }
+                ?: return
+
+        var channel: GuildMessageChannel? = guild.textChannels
+                .firstOrNull { it.id == fav.channelId }
+
+        if (channel == null) {
+            channel = guild.threadChannels
+                    .firstOrNull { it.id == fav.channelId }
+        }
+
+        if (channel == null) {
+            return event.replyError("Channel not found:\n${fav.url()}", fav.id)
+        }
+
+        log.debug("Retrieving message for [$fav]")
+        val message = retrieveMessage(event, channel, fav) ?: return
+
+        with(message) {
+            val builder = EmbedBuilder()
+                    .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
+                    .setColor(Color(80, 150, 25))
+                    .setDescription(contentRaw)
+                    .setFooter(fav.id)
+                    .setTimestamp(timeCreated)
+
+            attachImageToBuilder(builder, message)
+
+            event.replyEmbeds(builder.build()).await()
+        }
+    }
+
+    private fun attachImageToBuilder(builder: EmbedBuilder, message: Message) {
+        with(message) {
+            val embedImageUrl = attachments
+                    .firstOrNull { it.isImage }
+                    ?.proxyUrl
+                    ?.also { builder.setImage(it) }
+
+            attachments
+                    .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
+                    .forEach {
+                        var description = ""
+                        if (it.description != null) {
+                            description = "${it.description}: "
+                        }
+                        builder.appendDescription("\n$description${it.proxyUrl}")
+                    }
+        }
+    }
+
+    private suspend fun help(event: SlashCommandInteractionEvent) {
+        event.replyEmbeds(
+                EmbedBuilder()
+                        .setColor(Color(25, 80, 150))
+                        .setDescription(HELP_TEXT)
+                        .build()
+        )
+                .setEphemeral(true)
+                .await()
+    }
+
+    private suspend fun list(event: SlashCommandInteractionEvent) {
+        val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
+        val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
+
+        if (favs.isEmpty()) {
+            return event.replyError("No favs found")
+        }
+
+        val tagCount = mutableMapOf<String, Int>()
+        favs
+                .forEach { fav ->
+                    fav.tags.forEach {
+                        val count = tagCount[it] ?: 0
+                        tagCount[it] = count + 1
+                    }
                 }
-                builder.appendDescription("\n$description${it.proxyUrl}")
-              }
-    }
-  }
 
-  private suspend fun help(event: SlashCommandInteractionEvent) {
-    event.replyEmbeds(
-            EmbedBuilder()
-                    .setColor(Color(25, 80, 150))
-                    .setDescription(HELP_TEXT)
-                    .build()
-    )
-            .setEphemeral(true)
-            .await()
-  }
+        val embeds = mutableListOf<MessageEmbed>()
+        tagCount
+                .entries
+                .chunked(25)
+                .forEach { chunk ->
+                    val builder = EmbedBuilder()
+                    chunk.forEach {
+                        builder.addField(it.key, it.value.toString(), true)
+                    }
+                    embeds.add(builder.build())
+                }
 
-  private suspend fun list(event: SlashCommandInteractionEvent) {
-    val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
-    val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
-
-    if (favs.isEmpty()) {
-      return event.replyError("No favs found")
+        event
+                .replyEmbeds(embeds)
+                .setEphemeral(true)
+                .await()
     }
 
-    val tagCount = mutableMapOf<String, Int>()
-    favs
-            .forEach { fav ->
-              fav.tags.forEach {
-                val count = tagCount[it] ?: 0
-                tagCount[it] = count + 1
-              }
+    private suspend fun retrieveMessage(
+            event: SlashCommandInteractionEvent,
+            channel: GuildMessageChannel,
+            fav: Fav
+    ): Message? {
+        try {
+            return channel.retrieveMessageById(fav.messageId).await()
+        } catch (e: Exception) {
+            with(e.message.orEmpty()) {
+                if (contains("10008: Unknown Message")) {
+                    event.replyError(
+                            "Fav [${fav.id}] points to a removed message.\n"
+                                    + "It will be removed so this doesn't happen again.",
+                            fav.id
+                    )
+                    storage.removeFav(fav.id)
+                    return null
+                }
+
+                if (contains("Missing permission")) {
+                    event.replyError(
+                            "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
+                            fav.id
+                    )
+                    return null
+                }
             }
 
-    val embeds = mutableListOf<MessageEmbed>()
-    tagCount
-            .entries
-            .chunked(25)
-            .forEach { chunk ->
-              val builder = EmbedBuilder()
-              chunk.forEach {
-                builder.addField(it.key, it.value.toString(), true)
-              }
-              embeds.add(builder.build())
-            }
-
-    event
-            .replyEmbeds(embeds)
-            .setEphemeral(true)
-            .await()
-  }
-
-  private suspend fun retrieveMessage(
-          event: SlashCommandInteractionEvent,
-          channel: GuildMessageChannel,
-          fav: Fav
-  ): Message? {
-    try {
-      return channel.retrieveMessageById(fav.messageId).await()
-    } catch (e: Exception) {
-      with(e.message.orEmpty()) {
-        if (contains("10008: Unknown Message")) {
-          event.replyError(
-                  "Fav [${fav.id}] points to a removed message.\n"
-                          + "It will be removed so this doesn't happen again.",
-                  fav.id
-          )
-          storage.removeFav(fav.id)
-          return null
+            throw e
         }
-
-        if (contains("Missing permission")) {
-          event.replyError(
-                  "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
-                  fav.id
-          )
-          return null
-        }
-      }
-
-      throw e
     }
-  }
 }
