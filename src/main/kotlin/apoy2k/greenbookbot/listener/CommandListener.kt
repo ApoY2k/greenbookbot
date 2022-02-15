@@ -17,7 +17,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.slf4j.LoggerFactory
 import java.awt.Color
 
-
 private const val COMMAND_FAV = "fav"
 private const val COMMAND_LIST = "list"
 private const val COMMAND_HELP = "help"
@@ -25,7 +24,6 @@ private const val COMMAND_QUOTE = "quote"
 private const val OPTION_TAG = "tag"
 private const val OPTION_ID = "id"
 private const val OPTION_MESSAGE_LINK = "link"
-
 
 private const val HELP_TEXT = """
 **GreenBookBot** allows you to fav messages and re-post them later by referencing tags set on fav creation.
@@ -50,33 +48,33 @@ React with :label: on the posted fav to re-set all tags for this fav.
 """
 
 private val COMMANDS = listOf(
-        Commands.slash(COMMAND_FAV, "Post a random fav, filtered by the given tags or from all favs")
-                .addOption(
-                        OptionType.STRING,
-                        OPTION_TAG,
-                        "Limit the favs to only include favs with at least one of these (space-separated) tags"
-                )
-                .addOption(
-                        OptionType.STRING,
-                        OPTION_ID,
-                        "Post the fav associated with this specific ID"
-                ),
-        Commands.slash(COMMAND_LIST, "List amount of favs per tag")
-                .addOption(
-                        OptionType.STRING,
-                        OPTION_TAG,
-                        "Limit the listed counts to favs with at least one of these (space-separated) tags"
-                ),
-        Commands.slash(COMMAND_QUOTE, "quote message")
-                .addOption(
-                        OptionType.STRING,
-                        OPTION_MESSAGE_LINK, "Link to message", true
-                ),
-        Commands.slash(COMMAND_HELP, "Display usage help")
+    Commands.slash(COMMAND_FAV, "Post a random fav, filtered by the given tags or from all favs")
+        .addOption(
+            OptionType.STRING,
+            OPTION_TAG,
+            "Limit the favs to only include favs with at least one of these (space-separated) tags"
+        )
+        .addOption(
+            OptionType.STRING,
+            OPTION_ID,
+            "Post the fav associated with this specific ID"
+        ),
+    Commands.slash(COMMAND_LIST, "List amount of favs per tag")
+        .addOption(
+            OptionType.STRING,
+            OPTION_TAG,
+            "Limit the listed counts to favs with at least one of these (space-separated) tags"
+        ),
+    Commands.slash(COMMAND_QUOTE, "quote message")
+        .addOption(
+            OptionType.STRING,
+            OPTION_MESSAGE_LINK, "Link to message", true
+        ),
+    Commands.slash(COMMAND_HELP, "Display usage help")
 )
 
 class CommandListener(
-        private val storage: Storage
+    private val storage: Storage
 ) : ListenerAdapter() {
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
@@ -125,10 +123,10 @@ class CommandListener(
 
         with(message) {
             val builder = EmbedBuilder()
-                    .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
-                    .setColor(Color(80, 150, 25))
-                    .setDescription(contentRaw)
-                    .setTimestamp(timeCreated)
+                .setAuthor(author.effectiveName, jumpUrl, author.effectiveAvatarUrl)
+                .setColor(Color(80, 150, 25))
+                .setDescription(contentRaw)
+                .setTimestamp(timeCreated)
 
             attachImageToBuilder(builder, message)
 
@@ -158,7 +156,7 @@ class CommandListener(
         val candidates = mutableListOf<Fav>()
         if (id.isNotBlank()) {
             val fav = storage.getFav(id)
-                    ?: return event.replyError("Fav with id [$id] not found")
+                ?: return event.replyError("Fav with id [$id] not found")
 
             if (fav.userId != event.user.id) {
                 return event.replyError("That fav does not belong to you!")
@@ -167,24 +165,24 @@ class CommandListener(
             candidates.add(fav)
         } else {
             storage
-                    .getFavs(event.user.id, event.guild?.id, tags)
-                    .filter { guildIds.contains(it.guildId) }
-                    .also { candidates.addAll(it) }
+                .getFavs(event.user.id, event.guild?.id, tags)
+                .filter { guildIds.contains(it.guildId) }
+                .also { candidates.addAll(it) }
         }
 
         val fav = candidates.randomOrNull()
-                ?: return event.replyError("No favs found")
+            ?: return event.replyError("No favs found")
 
         val guild = event.jda.guilds
-                .firstOrNull { it.id == fav.guildId }
-                ?: return
+            .firstOrNull { it.id == fav.guildId }
+            ?: return
 
         var channel: GuildMessageChannel? = guild.textChannels
-                .firstOrNull { it.id == fav.channelId }
+            .firstOrNull { it.id == fav.channelId }
 
         if (channel == null) {
             channel = guild.threadChannels
-                    .firstOrNull { it.id == fav.channelId }
+                .firstOrNull { it.id == fav.channelId }
         }
 
         if (channel == null) {
@@ -196,11 +194,11 @@ class CommandListener(
 
         with(message) {
             val builder = EmbedBuilder()
-                    .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
-                    .setColor(Color(80, 150, 25))
-                    .setDescription(contentRaw)
-                    .setFooter(fav.id)
-                    .setTimestamp(timeCreated)
+                .setAuthor(author.name, message.jumpUrl, author.avatarUrl)
+                .setColor(Color(80, 150, 25))
+                .setDescription(contentRaw)
+                .setFooter(fav.id)
+                .setTimestamp(timeCreated)
 
             attachImageToBuilder(builder, message)
 
@@ -211,31 +209,31 @@ class CommandListener(
     private fun attachImageToBuilder(builder: EmbedBuilder, message: Message) {
         with(message) {
             val embedImageUrl = attachments
-                    .firstOrNull { it.isImage }
-                    ?.proxyUrl
-                    ?.also { builder.setImage(it) }
+                .firstOrNull { it.isImage }
+                ?.proxyUrl
+                ?.also { builder.setImage(it) }
 
             attachments
-                    .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
-                    .forEach {
-                        var description = ""
-                        if (it.description != null) {
-                            description = "${it.description}: "
-                        }
-                        builder.appendDescription("\n$description${it.proxyUrl}")
+                .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
+                .forEach {
+                    var description = ""
+                    if (it.description != null) {
+                        description = "${it.description}: "
                     }
+                    builder.appendDescription("\n$description${it.proxyUrl}")
+                }
         }
     }
 
     private suspend fun help(event: SlashCommandInteractionEvent) {
         event.replyEmbeds(
-                EmbedBuilder()
-                        .setColor(Color(25, 80, 150))
-                        .setDescription(HELP_TEXT)
-                        .build()
+            EmbedBuilder()
+                .setColor(Color(25, 80, 150))
+                .setDescription(HELP_TEXT)
+                .build()
         )
-                .setEphemeral(true)
-                .await()
+            .setEphemeral(true)
+            .await()
     }
 
     private suspend fun list(event: SlashCommandInteractionEvent) {
@@ -248,35 +246,35 @@ class CommandListener(
 
         val tagCount = mutableMapOf<String, Int>()
         favs
-                .forEach { fav ->
-                    fav.tags.forEach {
-                        val count = tagCount[it] ?: 0
-                        tagCount[it] = count + 1
-                    }
+            .forEach { fav ->
+                fav.tags.forEach {
+                    val count = tagCount[it] ?: 0
+                    tagCount[it] = count + 1
                 }
+            }
 
         val embeds = mutableListOf<MessageEmbed>()
         tagCount
-                .entries
-                .chunked(25)
-                .forEach { chunk ->
-                    val builder = EmbedBuilder()
-                    chunk.forEach {
-                        builder.addField(it.key, it.value.toString(), true)
-                    }
-                    embeds.add(builder.build())
+            .entries
+            .chunked(25)
+            .forEach { chunk ->
+                val builder = EmbedBuilder()
+                chunk.forEach {
+                    builder.addField(it.key, it.value.toString(), true)
                 }
+                embeds.add(builder.build())
+            }
 
         event
-                .replyEmbeds(embeds)
-                .setEphemeral(true)
-                .await()
+            .replyEmbeds(embeds)
+            .setEphemeral(true)
+            .await()
     }
 
     private suspend fun retrieveMessage(
-            event: SlashCommandInteractionEvent,
-            channel: GuildMessageChannel,
-            fav: Fav
+        event: SlashCommandInteractionEvent,
+        channel: GuildMessageChannel,
+        fav: Fav
     ): Message? {
         try {
             return channel.retrieveMessageById(fav.messageId).await()
@@ -284,9 +282,9 @@ class CommandListener(
             with(e.message.orEmpty()) {
                 if (contains("10008: Unknown Message")) {
                     event.replyError(
-                            "Fav [${fav.id}] points to a removed message.\n"
-                                    + "It will be removed so this doesn't happen again.",
-                            fav.id
+                        "Fav [${fav.id}] points to a removed message.\n"
+                            + "It will be removed so this doesn't happen again.",
+                        fav.id
                     )
                     storage.removeFav(fav.id)
                     return null
@@ -294,8 +292,8 @@ class CommandListener(
 
                 if (contains("Missing permission")) {
                     event.replyError(
-                            "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
-                            fav.id
+                        "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
+                        fav.id
                     )
                     return null
                 }
