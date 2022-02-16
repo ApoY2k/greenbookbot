@@ -107,7 +107,7 @@ class CommandListener(
 
     private suspend fun quote(event: SlashCommandInteractionEvent) {
         val messageLink = event.getOption(OPTION_MESSAGE_LINK)?.asString.orEmpty()
-        val tokenizedLink = messageLink.substringAfter("discord.com/channels/").split("/")
+        val tokenizedLink = messageLink.substringAfter("/channels/", "").split("/")
         if (tokenizedLink.size != 3) {
             return event.replyError("Invalid link format!")
         }
@@ -159,12 +159,14 @@ class CommandListener(
                 .also { candidates.addAll(it) }
         }
 
-        val fav = candidates.randomOrNull()
+        val fav = candidates.weightedRandom()
             ?: return event.replyError("No favs found")
+
+        storage.increaseUsed(fav)
 
         val guild = event.jda.guilds
             .firstOrNull { it.id == fav.guildId }
-            ?: return
+            ?: return event.replyError("Guild not found:\n${fav.guildUrl()}", fav.id)
 
         var channel: GuildMessageChannel? = guild.textChannels
             .firstOrNull { it.id == fav.channelId }
@@ -175,7 +177,7 @@ class CommandListener(
         }
 
         if (channel == null) {
-            return event.replyError("Channel not found:\n${fav.url()}", fav.id)
+            return event.replyError("Channel not found:\n${fav.channelUrl()}", fav.id)
         }
 
         log.debug("Retrieving message for [$fav]")
@@ -282,7 +284,7 @@ class CommandListener(
 
                 if (contains("Missing permission")) {
                     event.replyError(
-                        "No permission to channel:\n${fav.url()}\nPlease check my privileges.",
+                        "No permission to channel:\n${fav.channelUrl()}\nPlease check my privileges.",
                         fav.id
                     )
                     return null

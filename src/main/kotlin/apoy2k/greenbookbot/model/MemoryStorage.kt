@@ -24,7 +24,8 @@ class MemoryStorage : Storage {
             channelId,
             messageId,
             authorId,
-            mutableListOf()
+            mutableListOf(),
+            0
         )
         storage.add(fav)
         return fav.id
@@ -44,15 +45,19 @@ class MemoryStorage : Storage {
     }
 
     override suspend fun writeTags(favId: String, tags: Collection<String>) {
-        val fav = getFav(favId)
-        if (fav == null) {
-            log.warn("Fav[$favId] not found")
-            return
-        }
         log.info("Setting tags of Fav[$favId] to $tags")
         storage.replaceAll {
             when (it.id) {
-                favId -> Fav(fav.id, fav.userId, fav.guildId, fav.channelId, fav.messageId, fav.authorId, tags)
+                favId -> Fav(
+                    it.id,
+                    it.userId,
+                    it.guildId,
+                    it.channelId,
+                    it.messageId,
+                    it.authorId,
+                    tags,
+                    it.used
+                )
                 else -> it
             }
         }
@@ -61,5 +66,23 @@ class MemoryStorage : Storage {
     override suspend fun getFav(favId: String): Fav? {
         log.info("Fetching Fav[$favId]")
         return storage.firstOrNull { it.id == favId }
+    }
+
+    override suspend fun increaseUsed(fav: Fav) {
+        storage.replaceAll {
+            when (it.id) {
+                fav.id -> Fav(
+                    it.id,
+                    it.userId,
+                    it.guildId,
+                    it.channelId,
+                    it.messageId,
+                    it.authorId,
+                    it.tags,
+                    it.used + 1
+                )
+                else -> it
+            }
+        }
     }
 }

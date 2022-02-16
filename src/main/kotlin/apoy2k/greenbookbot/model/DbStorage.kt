@@ -100,6 +100,14 @@ class DbStorage(env: Env) : Storage {
         }
     }
 
+    override suspend fun increaseUsed(fav: Fav) {
+        query(dataSource) {
+            Favs.update({ Favs.id eq fav.id.toInt() }) {
+                it[used] = fav.used + 1
+            }
+        }
+    }
+
     private suspend fun <T> query(dataSource: DataSource, block: () -> T): T =
         withContext(Dispatchers.IO) {
             transaction(Database.connect(dataSource)) {

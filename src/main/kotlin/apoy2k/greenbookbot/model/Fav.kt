@@ -10,7 +10,8 @@ data class Fav(
     val channelId: String,
     val messageId: String,
     val authorId: String,
-    val tags: Collection<String>
+    val tags: Collection<String>,
+    val used: Int,
 ) {
 
     companion object {
@@ -26,13 +27,18 @@ data class Fav(
                 resultRow[Favs.authorId],
                 resultRow[Favs.tags]
                     .split(" ")
-                    .filter { it.isNotBlank() }
+                    .filter { it.isNotBlank() },
+                resultRow[Favs.used],
             )
     }
 
     override fun toString(): String {
         return "Fav[$id](G:$guildId,C:$channelId,M:$messageId)"
     }
+
+    fun guildUrl() = "https://discord.com/channels/$guildId"
+
+    fun channelUrl() = "https://discord.com/channels/$guildId/$channelId"
 }
 
 object Favs : Table() {
@@ -43,6 +49,7 @@ object Favs : Table() {
     val messageId = varchar("messageId", 100)
     val authorId = varchar("authorId", 100)
     val tags = varchar("tags", 200)
+    val used = integer("used")
 
     override val primaryKey = PrimaryKey(id)
 }
