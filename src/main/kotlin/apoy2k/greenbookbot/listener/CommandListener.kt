@@ -288,47 +288,70 @@ class CommandListener(
         val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
         val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
 
-        val usedCount = favs.sumOf { it.used }
+        val embed = EmbedBuilder()
+            .setTitle("${event.user.name} Stats")
 
-        event.replyEmbeds(
-            EmbedBuilder()
-                .setTitle("${event.user.name} Stats")
-                .addField("Amount of favs", favs.count().toString(), true)
-                .addField("Amount posted", usedCount.toString(), true)
-                .build()
-        )
-            .await()
+        val usedCount = favs.sumOf { it.used }
+        embed.addField("Counts", "**Saved**: ${favs.count()}\n**Posted**: $usedCount", true)
+
+        val topAuthors = getTopAuthors(favs, event.jda)
+        embed.addField("Top authors", topAuthors.joinToString("\n"), true)
+
+        event.replyEmbeds(embed.build()).await()
     }
 
     private suspend fun guildStats(event: SlashCommandInteractionEvent) {
         val favs = storage.getFavs(null, event.guild?.id, emptyList())
 
-        val usedCount = favs.sumOf { it.used }
+        val embed = EmbedBuilder()
+            .setTitle("Server Stats")
 
-        event.replyEmbeds(
-            EmbedBuilder()
-                .setTitle("Server Stats")
-                .addField("Amount of favs", favs.count().toString(), true)
-                .addField("Amount posted", usedCount.toString(), true)
-                .build()
-        )
-            .await()
+        val usedCount = favs.sumOf { it.used }
+        embed.addField("Counts", "**Saved**: ${favs.count()}\n**Posted**: $usedCount", true)
+
+        val topAuthors = getTopAuthors(favs, event.jda)
+        embed.addField("Top authors", topAuthors.joinToString("\n"), true)
+
+        val tagCount = mutableMapOf<String, Int>()
+        favs
+            .forEach { fav ->
+                fav.tags.forEach {
+                    val count = tagCount[it] ?: 0
+                    tagCount[it] = count + 1
+                }
+            }
+        val topTags = tagCount.entries
+            .sortedByDescending { it.value }
+            .take(5)
+            .map { entry -> "**${entry.key}**: ${entry.value}" }
+
+        embed.addField("Top tags", topTags.joinToString("\n"), true)
+
+        event.replyEmbeds(embed.build()).await()
     }
 
     private suspend fun globalStats(event: SlashCommandInteractionEvent) {
         val favs = storage.getFavs(null, null, emptyList())
 
-        val usedCount = favs.sumOf { it.used }
+        val embed = EmbedBuilder()
+            .setTitle("Global Stats")
 
-        event.replyEmbeds(
-            EmbedBuilder()
-                .setTitle("Global Stats")
-                .addField("Amount of favs", favs.count().toString(), true)
-                .addField("Amount posted", usedCount.toString(), true)
-                .build()
-        )
-            .await()
+        val usedCount = favs.sumOf { it.used }
+        embed.addField("Counts", "**Saved:** ${favs.count()}\n**Posted**: $usedCount", true)
+
+        event.replyEmbeds(embed.build()).await()
     }
+
+    private suspend fun getTopAuthors(favs: Collection<Fav>, jda: JDA): Collection<String> =
+        favs.groupBy { it.authorId }
+            .mapValues { grouping -> grouping.value.size }
+            .entries
+            .sortedByDescending { it.value }
+            .take(5)
+            .map { entry ->
+                val user = jda.retrieveUserById(entry.key).await()
+                "**${user.name}**: ${entry.value}"
+            }
 
     private suspend fun retrieveMessage(
         event: SlashCommandInteractionEvent,
