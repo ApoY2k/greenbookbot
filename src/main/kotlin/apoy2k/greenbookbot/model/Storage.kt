@@ -9,7 +9,7 @@ interface Storage {
         authorId: String
     ): String
 
-    suspend fun getFavs(userId: String, guildId: String?, tags: Collection<String>): List<Fav>
+    suspend fun getFavs(userId: String?, guildId: String?, tags: Collection<String>): List<Fav>
     suspend fun removeFav(favId: String)
     suspend fun writeTags(favId: String, tags: Collection<String>)
     suspend fun getFav(favId: String): Fav?

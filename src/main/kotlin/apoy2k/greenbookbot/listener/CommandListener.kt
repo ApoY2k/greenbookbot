@@ -20,6 +20,9 @@ private const val COMMAND_FAV = "fav"
 private const val COMMAND_LIST = "list"
 private const val COMMAND_HELP = "help"
 private const val COMMAND_QUOTE = "quote"
+private const val COMMAND_STATS = "stats"
+private const val COMMAND_STATS_GUILD = "serverstats"
+private const val COMMAND_STATS_GLOBAL = "globalstats"
 private const val OPTION_TAG = "tag"
 private const val OPTION_ID = "id"
 private const val OPTION_MESSAGE_LINK = "link"
@@ -44,6 +47,9 @@ As with `/fav`, provide a (space-separated) list of tags to limit the list to on
 
 **Editing tags on a fav**
 React with :label: on the posted fav to re-set all tags for this fav.
+
+**Quoting messages**
+Use the `/quote` command and a message link to embed a quote.
 """
 
 private val COMMANDS = listOf(
@@ -69,7 +75,15 @@ private val COMMANDS = listOf(
             OptionType.STRING,
             OPTION_MESSAGE_LINK, "Link to message", true
         ),
-    Commands.slash(COMMAND_HELP, "Display usage help")
+    Commands.slash(COMMAND_HELP, "Display usage help"),
+    Commands.slash(COMMAND_STATS, "Display your fav stats")
+        .addOption(
+            OptionType.STRING,
+            OPTION_TAG,
+            "Limit the listed counts to favs with at least one of these (space-separated) tags"
+        ),
+    Commands.slash(COMMAND_STATS_GUILD, "Display server-wide fav stats"),
+    Commands.slash(COMMAND_STATS_GLOBAL, "Display bot-global fav stats"),
 )
 
 class CommandListener(
@@ -97,6 +111,9 @@ class CommandListener(
                 COMMAND_HELP -> help(event)
                 COMMAND_LIST -> list(event)
                 COMMAND_QUOTE -> quote(event)
+                COMMAND_STATS -> stats(event)
+                COMMAND_STATS_GUILD -> guildStats(event)
+                COMMAND_STATS_GLOBAL -> globalStats(event)
                 else -> Unit
             }
         } catch (e: Exception) {
@@ -130,7 +147,11 @@ class CommandListener(
         }
     }
 
-    private suspend fun retrieveMessage(event: SlashCommandInteractionEvent, channelId: String, messageId: String): Message? {
+    private suspend fun retrieveMessage(
+        event: SlashCommandInteractionEvent,
+        channelId: String,
+        messageId: String
+    ): Message? {
         val channel = event.jda.getTextChannelById(channelId) ?: event.jda.getThreadChannelById(channelId)
         val message = channel?.retrieveMessageById(messageId)?.await()
         log.info("Retrieved message [${message?.id}] from channel [$channel]")
@@ -263,6 +284,52 @@ class CommandListener(
             .await()
     }
 
+    private suspend fun stats(event: SlashCommandInteractionEvent) {
+        val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
+        val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
+
+        val usedCount = favs.sumOf { it.used }
+
+        event.replyEmbeds(
+            EmbedBuilder()
+                .setTitle("${event.user.name} Stats")
+                .addField("Amount of favs", favs.count().toString(), true)
+                .addField("Amount posted", usedCount.toString(), true)
+                .build()
+        )
+            .await()
+    }
+
+    private suspend fun guildStats(event: SlashCommandInteractionEvent) {
+        val favs = storage.getFavs(null, event.guild?.id, emptyList())
+
+        val usedCount = favs.sumOf { it.used }
+
+        event.replyEmbeds(
+            EmbedBuilder()
+                .setTitle("Server Stats")
+                .addField("Amount of favs", favs.count().toString(), true)
+                .addField("Amount posted", usedCount.toString(), true)
+                .build()
+        )
+            .await()
+    }
+
+    private suspend fun globalStats(event: SlashCommandInteractionEvent) {
+        val favs = storage.getFavs(null, null, emptyList())
+
+        val usedCount = favs.sumOf { it.used }
+
+        event.replyEmbeds(
+            EmbedBuilder()
+                .setTitle("Global Stats")
+                .addField("Amount of favs", favs.count().toString(), true)
+                .addField("Amount posted", usedCount.toString(), true)
+                .build()
+        )
+            .await()
+    }
+
     private suspend fun retrieveMessage(
         event: SlashCommandInteractionEvent,
         channel: GuildMessageChannel,
@@ -275,7 +342,7 @@ class CommandListener(
                 if (contains("10008: Unknown Message")) {
                     event.replyError(
                         "Fav [${fav.id}] points to a removed message.\n"
-                            + "It will be removed so this doesn't happen again.",
+                                + "It will be removed so this doesn't happen again.",
                         fav.id
                     )
                     storage.removeFav(fav.id)

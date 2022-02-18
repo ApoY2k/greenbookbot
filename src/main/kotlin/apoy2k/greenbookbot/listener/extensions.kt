@@ -26,6 +26,10 @@ suspend fun SlashCommandInteractionEvent.replyError(message: String, favId: Stri
 }
 
 fun Collection<Fav>.weightedRandom(): Fav? {
+    if (this.isEmpty()) {
+        return null
+    }
+
     val map = this.associateWith { 1 / (it.used.toDouble() + 1) }
     return try {
         DiscreteProbabilityCollectionSampler(RNG, map).sample()

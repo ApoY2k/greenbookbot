@@ -53,11 +53,14 @@ class DbStorage(env: Env) : Storage {
         return favId.toString()
     }
 
-    override suspend fun getFavs(userId: String, guildId: String?, tags: Collection<String>): List<Fav> {
+    override suspend fun getFavs(userId: String?, guildId: String?, tags: Collection<String>): List<Fav> {
         log.info("Getting favs for User[$userId] Guild[$guildId] Tags$tags")
         return query(dataSource) {
             val query = Favs.selectAll()
-                .andWhere { Favs.userId eq userId }
+
+            if (!userId.isNullOrBlank()) {
+                query.andWhere { Favs.userId eq userId }
+            }
 
             if (!guildId.isNullOrBlank()) {
                 query.andWhere { Favs.guildId eq guildId }

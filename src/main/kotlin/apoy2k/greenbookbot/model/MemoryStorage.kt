@@ -31,10 +31,10 @@ class MemoryStorage : Storage {
         return fav.id
     }
 
-    override suspend fun getFavs(userId: String, guildId: String?, tags: Collection<String>): List<Fav> {
+    override suspend fun getFavs(userId: String?, guildId: String?, tags: Collection<String>): List<Fav> {
         log.info("Getting favs for User[$userId] Guild[$guildId] Tags$tags")
         return storage
-            .filter { it.userId == userId }
+            .filter { userId == null || it.userId == userId }
             .filter { guildId == null || it.guildId == guildId }
             .filter { tags.isEmpty() || it.tags.any { tag -> tags.contains(tag) } }
     }
