@@ -36,7 +36,7 @@ class MemoryStorage : Storage {
         return storage
             .filter { userId == null || it.userId == userId }
             .filter { guildId == null || it.guildId == guildId }
-            .filter { tags.isEmpty() || it.tags.any { tag -> tags.contains(tag) } }
+            .filter { tags.isEmpty() || it.tags.any { tag -> tags.contains(tag.lowercase()) } }
     }
 
     override suspend fun removeFav(favId: String) {

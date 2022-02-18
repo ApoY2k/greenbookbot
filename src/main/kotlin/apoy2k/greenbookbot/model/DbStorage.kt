@@ -69,7 +69,7 @@ class DbStorage(env: Env) : Storage {
             if (tags.isNotEmpty()) {
                 query.andWhere {
                     tags.map {
-                        Op.build { Favs.tags like "% $it %" }
+                        Op.build { Favs.tags like "% ${it.lowercase()} %" }
                     }.compoundOr()
                 }
             }
@@ -86,10 +86,11 @@ class DbStorage(env: Env) : Storage {
     }
 
     override suspend fun writeTags(favId: String, tags: Collection<String>) {
-        log.info("Setting tags of Fav[$favId] to $tags")
+        val writeTags = tags.map { it.lowercase().trim() }
+        log.info("Setting tags of Fav[$favId] to $writeTags")
         query(dataSource) {
             Favs.update({ Favs.id eq favId.toInt() }) {
-                it[Favs.tags] = " " + tags.joinToString(" ") + " "
+                it[Favs.tags] = " " + writeTags.joinToString(" ") + " "
             }
         }
     }

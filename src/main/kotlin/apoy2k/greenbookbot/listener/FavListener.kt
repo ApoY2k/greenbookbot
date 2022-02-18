@@ -58,7 +58,7 @@ class FavListener(
 
         var tags = content
             .split(" ")
-            .map { it.trim() }
+            .map { it.trim().lowercase() }
             .toSet()
 
         if (content == ".") {
