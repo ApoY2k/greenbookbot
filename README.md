@@ -3,11 +3,11 @@
 A bot that allows you to "fav" messages, tag them and quote them later, so you never lose track of any hot takes or
 funny jokes on your server.
 
-## Invite
+## 👀 Invite
 
 There is no public invite link yet.
 
-## Hosting
+## 💻 Hosting
 
 To host your own instance, check out [the docker image](https://hub.docker.com/r/apoy2k/greenbookbot). You will need to
 also provide a postgres instance for the database.
@@ -22,7 +22,7 @@ also provide a postgres instance for the database.
 - Provide env variables as defined in the `.env.template` file
 - Start the image
 
-## Development
+## 🐞 Development
 
 - Set up local dev environment as required
 - Create Application & Bot User on Discord Developer Portal
