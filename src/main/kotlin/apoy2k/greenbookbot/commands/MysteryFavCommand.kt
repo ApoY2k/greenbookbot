@@ -4,20 +4,31 @@ import apoy2k.greenbookbot.await
 import apoy2k.greenbookbot.forMessage
 import apoy2k.greenbookbot.model.Storage
 import apoy2k.greenbookbot.replyError
+import apoy2k.greenbookbot.weightedRandom
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 
-val MysteryFavCommand = Commands.slash("mystery", "Post a random fav (even other users), without revelaing who posted")
+private const val SELF = "self"
+
+val MysteryFavCommand =
+    Commands.slash("mystery", "Post a random fav (even of other users), without reveaaling the author")
+        .addOption(OptionType.BOOLEAN, SELF, "Only choose mystery fav from your own favs")
 
 suspend fun executeMysteryFavCommand(storage: Storage, event: SlashCommandInteractionEvent) {
     val guildIds = event.jda.guilds.map { it.id }
 
+    val userId = when (event.getOption(SELF)?.asBoolean) {
+        true -> event.user.id
+        else -> null
+    }
+
     val candidates = storage
-        .getFavs(null, event.guild?.id, emptyList())
+        .getFavs(userId, event.guild?.id, emptyList())
         .filter { guildIds.contains(it.guildId) }
 
-    val fav = candidates.randomOrNull()
+    val fav = candidates.weightedRandom()
         ?: return event.replyError("No favs found")
 
     val guild = event.jda.guilds
