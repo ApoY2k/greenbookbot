@@ -1,7 +1,8 @@
 package apoy2k.greenbookbot
 
 import apoy2k.greenbookbot.listener.CommandListener
-import apoy2k.greenbookbot.listener.FavListener
+import apoy2k.greenbookbot.listener.MessageListener
+import apoy2k.greenbookbot.listener.ReactionListener
 import apoy2k.greenbookbot.model.DbStorage
 import apoy2k.greenbookbot.model.MemoryStorage
 import kotlinx.coroutines.runBlocking
@@ -23,15 +24,19 @@ fun main() = runBlocking {
             MemoryStorage()
         }
 
-        val favListener = FavListener(storage)
         val commandListener = CommandListener(storage)
 
         val jda = JDABuilder.createDefault(env.authToken)
-            .addEventListeners(favListener, commandListener)
+            .addEventListeners(
+                ReactionListener(storage),
+                MessageListener(storage),
+                commandListener
+            )
             .build()
+
         jda.awaitReady()
-        jda.presence.setPresence(Activity.watching("out for hot takes"), false)
         commandListener.initCommands(jda, env)
+        jda.presence.setPresence(Activity.watching("out for hot takes"), false)
     } catch (e: Exception) {
         log.error(e.message, e)
     }

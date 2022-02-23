@@ -1,8 +1,9 @@
-package apoy2k.greenbookbot.listener
+package apoy2k.greenbookbot
 
 import apoy2k.greenbookbot.model.Fav
 import kotlinx.coroutines.future.await
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.requests.RestAction
 import org.apache.commons.rng.sampling.DiscreteProbabilityCollectionSampler
@@ -36,4 +37,33 @@ fun Collection<Fav>.weightedRandom(): Fav? {
     } catch (e: IndexOutOfBoundsException) {
         null
     }
+}
+
+fun EmbedBuilder.forMessage(message: Message, favId: String? = ""): EmbedBuilder = with(this) {
+    val channelName = message.channel.name
+    setAuthor("${message.author.name} in #$channelName", message.jumpUrl, message.author.effectiveAvatarUrl)
+    setColor(Color(80, 150, 25))
+    setDescription(message.contentRaw)
+    setTimestamp(message.timeCreated)
+
+    val embedImageUrl = message.attachments
+        .firstOrNull { it.isImage }
+        ?.proxyUrl
+        ?.also { setImage(it) }
+
+    message.attachments
+        .filter { embedImageUrl != null && it.proxyUrl != embedImageUrl }
+        .forEach {
+            var description = ""
+            if (it.description != null) {
+                description = "${it.description}: "
+            }
+            appendDescription("\n$description${it.proxyUrl}")
+        }
+
+    if (!favId.isNullOrBlank()) {
+        setFooter(favId)
+    }
+
+    this
 }
