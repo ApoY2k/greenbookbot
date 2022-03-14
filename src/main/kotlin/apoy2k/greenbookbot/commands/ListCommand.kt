@@ -4,6 +4,7 @@ import apoy2k.greenbookbot.await
 import apoy2k.greenbookbot.model.Storage
 import apoy2k.greenbookbot.replyError
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -35,21 +36,25 @@ suspend fun executeListCommand(storage: Storage, event: SlashCommandInteractionE
             }
         }
 
-    val embeds = mutableListOf<MessageEmbed>()
+    event
+        .reply("Listing total of ${tagCount.size} tags")
+        .await()
+
     tagCount
         .entries
         .sortedBy { it.key }
         .chunked(25)
-        .forEach { chunk ->
-            val builder = EmbedBuilder()
-            chunk.forEach {
-                builder.addField(it.key, it.value.toString(), true)
+        .chunked(10)
+        .forEach { messageEntries ->
+            val embeds = mutableListOf<MessageEmbed>()
+            messageEntries.forEach { fields ->
+                val builder = EmbedBuilder()
+                fields.forEach { builder.addField(it.key, it.value.toString(), true) }
+                embeds.add(builder.build())
             }
-            embeds.add(builder.build())
+            event
+                .channel
+                .sendMessage(MessageBuilder().setEmbeds(embeds).build())
+                .await()
         }
-
-    event
-        .replyEmbeds(embeds)
-        .setEphemeral(true)
-        .await()
 }
