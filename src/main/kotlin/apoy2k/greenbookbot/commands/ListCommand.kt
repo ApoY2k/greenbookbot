@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 
 private const val OPTION_TAG = "tag"
+private const val OPTION_GUILD = "server"
 
 val ListCommand = Commands.slash("list", "List amount of favs per tag")
     .addOption(
@@ -18,10 +19,16 @@ val ListCommand = Commands.slash("list", "List amount of favs per tag")
         OPTION_TAG,
         "Limit the listed counts to favs with at least one of these (space-separated) tags"
     )
+    .addOption(
+        OptionType.STRING,
+        OPTION_GUILD,
+        "Limit the listed counts to favs from a single server (provided the server id)"
+    )
 
 suspend fun executeListCommand(storage: Storage, event: SlashCommandInteractionEvent) {
     val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
-    val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
+    val guildId = event.getOption(OPTION_GUILD)?.asString ?: event.guild?.id
+    val favs = storage.getFavs(event.user.id, guildId, tags)
 
     if (favs.isEmpty()) {
         return event.replyError("No favs found")
