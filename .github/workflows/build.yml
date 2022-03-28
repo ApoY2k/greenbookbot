@@ -8,13 +8,12 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
     
-    - name: Set up JDK 11
+    - name: Set up JDK
       uses: actions/setup-java@v2
       with:
         java-version: '17'
@@ -24,13 +23,17 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
     - name: Login to DockerHub
       uses: docker/login-action@v1 
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
           
-    - name: Build and push Docker images
+    - name: Build and push image
       uses: docker/build-push-action@v2
       with:
         context: .
