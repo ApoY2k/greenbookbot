@@ -3,8 +3,6 @@ name: Build
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
@@ -22,11 +20,7 @@ jobs:
         
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    
-  deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
+
     - name: Login to DockerHub
       uses: docker/login-action@v1 
       with:
