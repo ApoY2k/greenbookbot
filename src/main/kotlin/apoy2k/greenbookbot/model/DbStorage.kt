@@ -57,6 +57,7 @@ class DbStorage(env: Env) : Storage {
         log.info("Getting favs for User[$userId] Guild[$guildId] Tags$tags")
         return query(dataSource) {
             val query = Favs.selectAll()
+                .orderBy(Favs.used to SortOrder.DESC)
 
             if (!userId.isNullOrBlank()) {
                 query.andWhere { Favs.userId eq userId }
@@ -108,6 +109,22 @@ class DbStorage(env: Env) : Storage {
         query(dataSource) {
             Favs.update({ Favs.id eq fav.id.toInt() }) {
                 it[used] = fav.used + 1
+            }
+        }
+    }
+
+    override suspend fun upvote(fav: Fav) {
+        query(dataSource) {
+            Favs.update({ Favs.id eq fav.id.toInt() }) {
+                it[votes] = fav.votes + 1
+            }
+        }
+    }
+
+    override suspend fun downvote(fav: Fav) {
+        query(dataSource) {
+            Favs.update({ Favs.id eq fav.id.toInt() }) {
+                it[votes] = fav.votes - 1
             }
         }
     }

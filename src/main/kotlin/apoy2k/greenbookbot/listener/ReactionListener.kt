@@ -5,7 +5,9 @@ import apoy2k.greenbookbot.forMessage
 import apoy2k.greenbookbot.model.Storage
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.events.message.react.GenericMessageReactionEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
+import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 
 class ReactionListener(
@@ -24,6 +26,23 @@ class ReactionListener(
             "U+1f4d7" -> addFav(event)
             "U+1f5d1U+fe0f" -> removeFav(event)
             "U+1f3f7U+fe0f" -> editFav(event)
+            "U+1f44d" -> upvote(event)
+            "U+1f44e" -> downvote(event)
+            else -> Unit
+        }
+    }
+
+    override fun onMessageReactionRemove(event: MessageReactionRemoveEvent) = runBlocking {
+        val code = with(event.reaction.reactionEmote) {
+            if (!isEmoji) {
+                return@runBlocking
+            }
+            asCodepoints
+        }
+
+        when (code) {
+            "U+1f44d" -> downvote(event)
+            "U+1f44e" -> upvote(event)
             else -> Unit
         }
     }
@@ -62,10 +81,6 @@ class ReactionListener(
     }
 
     private suspend fun editFav(event: MessageReactionAddEvent) {
-        if (event.reaction.guild == null) {
-            return
-        }
-
         val message = event.retrieveMessage().await()
         val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
         val fav = storage.getFav(favId) ?: return
@@ -87,5 +102,25 @@ class ReactionListener(
             .flatMap { user -> user.openPrivateChannel() }
             .flatMap { channel -> channel.sendMessageEmbeds(embed.build()) }
             .await()
+    }
+
+    private suspend fun upvote(event: GenericMessageReactionEvent) {
+        if (event.user?.isBot != false) {
+            return
+        }
+        val message = event.retrieveMessage().await()
+        val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
+        val fav = storage.getFav(favId) ?: return
+        storage.upvote(fav)
+    }
+
+    private suspend fun downvote(event: GenericMessageReactionEvent) {
+        if (event.user?.isBot != false) {
+            return
+        }
+        val message = event.retrieveMessage().await()
+        val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
+        val fav = storage.getFav(favId) ?: return
+        storage.downvote(fav)
     }
 }

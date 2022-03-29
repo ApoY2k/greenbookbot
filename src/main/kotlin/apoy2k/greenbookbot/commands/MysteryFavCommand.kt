@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 private const val SELF = "self"
 
 val MysteryFavCommand =
-    Commands.slash("mystery", "Post a random fav (even of other users), without reveaaling the author")
+    Commands.slash("mystery", "Post a random fav (even of other users), without revealing the author")
         .addOption(OptionType.BOOLEAN, SELF, "Only choose mystery fav from your own favs")
 
 suspend fun executeMysteryFavCommand(storage: Storage, event: SlashCommandInteractionEvent) {
@@ -42,5 +42,8 @@ suspend fun executeMysteryFavCommand(storage: Storage, event: SlashCommandIntera
     val embed = EmbedBuilder().forMessage(message, fav.id)
         .setAuthor("Mystery Fav", message.jumpUrl)
         .build()
-    event.replyEmbeds(embed).await()
+    val interaction = event.replyEmbeds(embed).await()
+        .retrieveOriginal().await()
+    interaction.addReaction("👍").await()
+    interaction.addReaction("👎").await()
 }

@@ -36,6 +36,19 @@ fun getTopTags(favs: Collection<Fav>): Collection<String> {
         .map { entry -> "**${entry.key}**: ${entry.value}" }
 }
 
+suspend fun Collection<Fav>.toVotesList(jda: JDA, useAuthor: Boolean): Collection<String> = this.map {
+    val name = when (useAuthor) {
+        true -> jda.retrieveUserById(it.authorId).await().name
+        else -> jda.retrieveUserById(it.userId).await().name
+    }
+    "**${it.id} ($name):** ${it.votes.withExplicitSign()}"
+}
+
+private fun Int.withExplicitSign(): String = when (this > 0) {
+    true -> "+$this"
+    else -> "$this"
+}
+
 suspend fun retrieveMessageWithErrorHandling(
     fav: Fav,
     storage: Storage,

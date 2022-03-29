@@ -63,5 +63,8 @@ suspend fun executeFavCommand(storage: Storage, event: SlashCommandInteractionEv
 
     val message = retrieveMessageWithErrorHandling(fav, storage, event, channel) ?: return
     val embed = EmbedBuilder().forMessage(message, fav.id).build()
-    event.replyEmbeds(embed).await()
+    val interaction = event.replyEmbeds(embed).await()
+        .retrieveOriginal().await()
+    interaction.addReaction("👍").await()
+    interaction.addReaction("👎").await()
 }

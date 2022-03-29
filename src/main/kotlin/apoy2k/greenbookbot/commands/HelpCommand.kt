@@ -29,6 +29,9 @@ React with :label: on the posted fav to re-set all tags for this fav.
 
 **Quoting messages**
 Use the `/quote` command and a message link to embed a quote.
+
+**Stats**
+Use `/stats` for personal and `/serverstats` for server-wide stats about favs.
 """
 
 val HelpCommand = Commands.slash("help", "Display usage help")

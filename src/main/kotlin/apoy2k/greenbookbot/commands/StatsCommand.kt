@@ -32,5 +32,13 @@ suspend fun executeStatsCommand(storage: Storage, event: SlashCommandInteraction
     val topTags = getTopTags(favs)
     embed.addField("Top tags", topTags.joinToString("\n"), true)
 
+    val highestVotes = favs.sortedByDescending { it.votes }.take(5)
+        .toVotesList(event.jda, useAuthor = true)
+    embed.addField("Highest votes (Author)", highestVotes.joinToString("\n"), true)
+
+    val lowestVotes = favs.sortedBy { it.votes }.take(5)
+        .toVotesList(event.jda, useAuthor = true)
+    embed.addField("Lowest votes (Author)", lowestVotes.joinToString("\n"), true)
+
     event.replyEmbeds(embed.build()).await()
 }

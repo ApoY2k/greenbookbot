@@ -25,7 +25,8 @@ class MemoryStorage : Storage {
             messageId,
             authorId,
             mutableListOf(),
-            0
+            0,
+            0,
         )
         storage.add(fav)
         return fav.id
@@ -56,7 +57,8 @@ class MemoryStorage : Storage {
                     it.messageId,
                     it.authorId,
                     tags,
-                    it.used
+                    it.used,
+                    it.votes,
                 )
                 else -> it
             }
@@ -79,7 +81,48 @@ class MemoryStorage : Storage {
                     it.messageId,
                     it.authorId,
                     it.tags,
-                    it.used + 1
+                    it.used + 1,
+                    it.votes
+                )
+                else -> it
+            }
+        }
+    }
+
+    override suspend fun upvote(fav: Fav) {
+        log.info("Upvoting Fav[${fav.id}]")
+        storage.replaceAll {
+            when (it.id) {
+                fav.id -> Fav(
+                    it.id,
+                    it.userId,
+                    it.guildId,
+                    it.channelId,
+                    it.messageId,
+                    it.authorId,
+                    it.tags,
+                    it.used,
+                    it.votes + 1,
+                )
+                else -> it
+            }
+        }
+    }
+
+    override suspend fun downvote(fav: Fav) {
+        log.info("Downvoting Fav[${fav.id}]")
+        storage.replaceAll {
+            when (it.id) {
+                fav.id -> Fav(
+                    it.id,
+                    it.userId,
+                    it.guildId,
+                    it.channelId,
+                    it.messageId,
+                    it.authorId,
+                    it.tags,
+                    it.used,
+                    it.votes - 1,
                 )
                 else -> it
             }

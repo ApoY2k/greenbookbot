@@ -14,4 +14,6 @@ interface Storage {
     suspend fun writeTags(favId: String, tags: Collection<String>)
     suspend fun getFav(favId: String): Fav?
     suspend fun increaseUsed(fav: Fav)
+    suspend fun upvote(fav: Fav)
+    suspend fun downvote(fav: Fav)
 }

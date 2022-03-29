@@ -23,5 +23,13 @@ suspend fun executeGuildStats(storage: Storage, event: SlashCommandInteractionEv
     val topTags = getTopTags(favs)
     embed.addField("Top tags", topTags.joinToString("\n"), true)
 
+    val highestVotes = favs.sortedByDescending { it.votes }.take(5)
+        .toVotesList(event.jda, useAuthor = false)
+    embed.addField("Highest votes (User)", highestVotes.joinToString("\n"), true)
+
+    val lowestVotes = favs.sortedBy { it.votes }.take(5)
+        .toVotesList(event.jda, useAuthor = false)
+    embed.addField("Lowest votes (User)", lowestVotes.joinToString("\n"), true)
+
     event.replyEmbeds(embed.build()).await()
 }

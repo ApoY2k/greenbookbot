@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS public.favs
+    ADD COLUMN votes bigint NOT NULL DEFAULT 0;

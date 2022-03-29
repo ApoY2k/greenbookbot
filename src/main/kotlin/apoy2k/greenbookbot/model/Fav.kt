@@ -12,6 +12,7 @@ data class Fav(
     val authorId: String,
     val tags: Collection<String>,
     val used: Int,
+    val votes: Int,
 ) {
 
     companion object {
@@ -29,6 +30,7 @@ data class Fav(
                     .split(" ")
                     .filter { it.isNotBlank() },
                 resultRow[Favs.used],
+                resultRow[Favs.votes],
             )
     }
 
@@ -50,6 +52,7 @@ object Favs : Table() {
     val authorId = varchar("authorId", 100)
     val tags = varchar("tags", 200)
     val used = integer("used")
+    val votes = integer("votes")
 
     override val primaryKey = PrimaryKey(id)
 }
