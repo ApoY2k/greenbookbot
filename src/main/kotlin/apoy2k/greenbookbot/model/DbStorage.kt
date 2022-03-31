@@ -80,50 +80,59 @@ class DbStorage(env: Env) : Storage {
     }
 
     override suspend fun removeFav(favId: String) {
-        log.info("Removing Fav[$favId]")
+        val id = favId.toIntOrNull() ?: return
+        log.info("Removing Fav[$id]")
         query(dataSource) {
-            Favs.deleteWhere { Favs.id eq favId.toInt() }
+            Favs.deleteWhere { Favs.id eq id }
         }
     }
 
     override suspend fun writeTags(favId: String, tags: Collection<String>) {
+        val id = favId.toIntOrNull() ?: return
         val writeTags = tags.map { it.lowercase().trim() }
-        log.info("Setting tags of Fav[$favId] to $writeTags")
+        log.info("Setting tags of Fav[$id] to $writeTags")
         query(dataSource) {
-            Favs.update({ Favs.id eq favId.toInt() }) {
+            Favs.update({ Favs.id eq id }) {
                 it[Favs.tags] = " " + writeTags.joinToString(" ") + " "
             }
         }
     }
 
     override suspend fun getFav(favId: String): Fav? {
-        log.info("Fetching Fav[$favId]")
+        val id = favId.toIntOrNull() ?: return null
+        log.info("Fetching Fav[$id]")
         return query(dataSource) {
-            Favs.select { Favs.id eq favId.toInt() }
+            Favs.select { Favs.id eq id }
                 .map { Fav.fromResultRow(it) }
                 .firstOrNull()
         }
     }
 
     override suspend fun increaseUsed(fav: Fav) {
+        val id = fav.id.toIntOrNull() ?: return
+        log.info("Increasing used count of Fav[$id]")
         query(dataSource) {
-            Favs.update({ Favs.id eq fav.id.toInt() }) {
+            Favs.update({ Favs.id eq id }) {
                 it[used] = fav.used + 1
             }
         }
     }
 
     override suspend fun upvote(fav: Fav) {
+        val id = fav.id.toIntOrNull() ?: return
+        log.info("Upvoting Fav[$id]")
         query(dataSource) {
-            Favs.update({ Favs.id eq fav.id.toInt() }) {
+            Favs.update({ Favs.id eq id }) {
                 it[votes] = fav.votes + 1
             }
         }
     }
 
     override suspend fun downvote(fav: Fav) {
+        val id = fav.id.toIntOrNull() ?: return
+        log.info("Downvoting Fav[$id]")
         query(dataSource) {
-            Favs.update({ Favs.id eq fav.id.toInt() }) {
+            Favs.update({ Favs.id eq id }) {
                 it[votes] = fav.votes - 1
             }
         }
@@ -132,7 +141,6 @@ class DbStorage(env: Env) : Storage {
     private suspend fun <T> query(dataSource: DataSource, block: () -> T): T =
         withContext(Dispatchers.IO) {
             transaction(Database.connect(dataSource)) {
-                addLogger(StdOutSqlLogger)
                 block()
             }
         }
