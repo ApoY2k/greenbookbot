@@ -36,11 +36,6 @@ suspend fun executeFavCommand(storage: Storage, event: SlashCommandInteractionEv
     if (id.isNotBlank()) {
         val fav = storage.getFav(id)
             ?: return event.replyError("Fav with id [$id] not found")
-
-        if (fav.userId != event.user.id) {
-            return event.replyError("That fav does not belong to you!")
-        }
-
         candidates.add(fav)
     } else {
         storage

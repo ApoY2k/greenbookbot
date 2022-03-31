@@ -36,11 +36,15 @@ fun getTopTags(favs: Collection<Fav>): Collection<String> {
         .map { entry -> "**${entry.key}**: ${entry.value}" }
 }
 
-suspend fun Collection<Fav>.toVotesList(jda: JDA, useAuthor: Boolean): Collection<String> = this.map {
-    val name = when (useAuthor) {
-        true -> jda.retrieveUserById(it.authorId).await().name
-        else -> jda.retrieveUserById(it.userId).await().name
-    }
+fun getTopUsed(favs: Collection<Fav>): Collection<String> {
+    return favs
+        .sortedBy { it.used }
+        .take(5)
+        .map { entry -> "**${entry.id}**: ${entry.used}" }
+}
+
+suspend fun Collection<Fav>.toVotesList(jda: JDA): Collection<String> = this.map {
+    val name = jda.retrieveUserById(it.authorId).await().name
     "**${it.id} ($name):** ${it.votes.withExplicitSign()}"
 }
 
