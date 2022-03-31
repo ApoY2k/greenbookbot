@@ -22,24 +22,7 @@ suspend fun executeStatsCommand(storage: Storage, event: SlashCommandInteraction
 
     val embed = EmbedBuilder()
         .setTitle("${event.user.name} Stats")
-
-    val usedCount = favs.sumOf { it.used }
-    embed.addField("Counts", "**Saved**: ${favs.count()}\n**Posted**: $usedCount", true)
-
-    val topAuthors = getTopAuthors(favs, event.jda)
-    embed.addField("Top authors", topAuthors.joinToString("\n"), true)
-
-    val topTags = getTopTags(favs)
-    embed.addField("Top tags", topTags.joinToString("\n"), true)
-
-    val topUsed = getTopUsed(favs, event.jda)
-    embed.addField("Top posted", topUsed.joinToString("\n"), true)
-
-    val highestVotes = favs.sortedByDescending { it.votes }.take(5).toVotesList(event.jda)
-    embed.addField("Highest votes", highestVotes.joinToString("\n"), true)
-
-    val lowestVotes = favs.sortedBy { it.votes }.take(5).toVotesList(event.jda)
-    embed.addField("Lowest votes", lowestVotes.joinToString("\n"), true)
+        .writeStats(favs, event.jda)
 
     event.replyEmbeds(embed.build()).await()
 }

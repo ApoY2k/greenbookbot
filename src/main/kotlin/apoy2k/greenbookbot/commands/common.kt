@@ -4,6 +4,9 @@ import apoy2k.greenbookbot.await
 import apoy2k.greenbookbot.model.Fav
 import apoy2k.greenbookbot.model.Storage
 import apoy2k.greenbookbot.replyError
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
@@ -87,4 +90,22 @@ suspend fun retrieveMessageWithErrorHandling(
         }
     }
     return null
+}
+
+suspend fun EmbedBuilder.writeStats(favs: Collection<Fav>, jda: JDA) = coroutineScope {
+    val usedCount = async { favs.sumOf { it.used } }
+    val topAuthors = async { getTopAuthors(favs, jda) }
+    val topTags = async { getTopTags(favs) }
+    val topUsed = async { getTopUsed(favs, jda) }
+    val highestVotes = async { favs.sortedByDescending { it.votes }.take(5).toVotesList(jda) }
+    val lowestVotes = async { favs.sortedBy { it.votes }.take(5).toVotesList(jda) }
+
+    with(this) {
+        addField("Counts", "**Saved**: ${favs.count()}\n**Posted**: ${usedCount.await()}", true)
+        addField("Top authors", topAuthors.await().joinToString("\n"), true)
+        addField("Top tags", topTags.await().joinToString("\n"), true)
+        addField("Top posted", topUsed.await().joinToString("\n"), true)
+        addField("Highest votes", highestVotes.await().joinToString("\n"), true)
+        addField("Lowest votes", lowestVotes.await().joinToString("\n"), true)
+    }
 }
