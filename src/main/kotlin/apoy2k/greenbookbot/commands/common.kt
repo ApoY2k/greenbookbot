@@ -38,7 +38,7 @@ fun getTopTags(favs: Collection<Fav>): Collection<String> {
 
 fun getTopUsed(favs: Collection<Fav>): Collection<String> {
     return favs
-        .sortedBy { it.used }
+        .sortedByDescending { it.used }
         .take(5)
         .map { entry -> "**${entry.id}**: ${entry.used}" }
 }
