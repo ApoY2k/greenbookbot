@@ -7,7 +7,10 @@ import apoy2k.greenbookbot.replyError
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+
+suspend fun JDA.getUser(userId: String): User = this.getUserById(userId) ?: this.retrieveUserById(userId).await()
 
 suspend fun getTopAuthors(favs: Collection<Fav>, jda: JDA): Collection<String> =
     favs.groupBy { it.authorId }
@@ -16,8 +19,8 @@ suspend fun getTopAuthors(favs: Collection<Fav>, jda: JDA): Collection<String> =
         .sortedByDescending { it.value }
         .take(5)
         .map { entry ->
-            val user = jda.retrieveUserById(entry.key).await()
-            "**${user.name}**: ${entry.value}"
+            val name = jda.getUser(entry.key).name
+            "**${name}**: ${entry.value}"
         }
 
 fun getTopTags(favs: Collection<Fav>): Collection<String> {
@@ -41,13 +44,13 @@ suspend fun getTopUsed(favs: Collection<Fav>, jda: JDA): Collection<String> {
         .sortedByDescending { it.used }
         .take(5)
         .map {
-            val name = jda.retrieveUserById(it.authorId).await().name
+            val name = jda.getUser(it.authorId).name
             "**${it.id} ($name)**: ${it.used}"
         }
 }
 
 suspend fun Collection<Fav>.toVotesList(jda: JDA): Collection<String> = this.map {
-    val name = jda.retrieveUserById(it.authorId).await().name
+    val name = jda.getUser(it.authorId).name
     "**${it.id} ($name):** ${it.votes.withExplicitSign()}"
 }
 
