@@ -32,7 +32,7 @@ suspend fun executeStatsCommand(storage: Storage, event: SlashCommandInteraction
     val topTags = getTopTags(favs)
     embed.addField("Top tags", topTags.joinToString("\n"), true)
 
-    val topUsed = getTopUsed(favs)
+    val topUsed = getTopUsed(favs, event.jda)
     embed.addField("Top posted", topUsed.joinToString("\n"), true)
 
     val highestVotes = favs.sortedByDescending { it.votes }.take(5).toVotesList(event.jda)
