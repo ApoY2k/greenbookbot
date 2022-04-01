@@ -32,10 +32,12 @@ suspend fun executeFavCommand(storage: Storage, event: SlashCommandInteractionEv
     val tags = event.getOption(OPTION_TAG)?.asString?.split(" ").orEmpty()
     val guildIds = event.jda.guilds.map { it.id }
 
+    val interaction = event.reply("Fetching candidates...").await()
+
     val candidates = mutableListOf<Fav>()
     if (id.isNotBlank()) {
         val fav = storage.getFav(id)
-            ?: return event.replyError("Fav with id [$id] not found")
+            ?: return interaction.replyError("Fav with id [$id] not found")
         candidates.add(fav)
     } else {
         storage
@@ -45,21 +47,24 @@ suspend fun executeFavCommand(storage: Storage, event: SlashCommandInteractionEv
     }
 
     val fav = candidates.weightedRandom()
-        ?: return event.replyError("No favs found")
+        ?: return interaction.replyError("No favs found")
 
     storage.increaseUsed(fav)
 
     val guild = event.jda.guilds
         .firstOrNull { it.id == fav.guildId }
-        ?: return event.replyError("Guild not found:\n${fav.guildUrl()}", fav.id)
+        ?: return interaction.replyError("Guild not found:\n${fav.guildUrl()}", fav.id)
     val channel = guild.getTextChannelById(fav.channelId)
         ?: guild.getThreadChannelById(fav.channelId)
-        ?: return event.replyError("Channel not found:\n${fav.channelUrl()}", fav.id)
+        ?: return interaction.replyError("Channel not found:\n${fav.channelUrl()}", fav.id)
 
-    val message = retrieveMessageWithErrorHandling(fav, storage, event, channel) ?: return
+    val message = retrieveMessageWithErrorHandling(fav, storage, interaction, channel) ?: return
     val embed = EmbedBuilder().forMessage(message, fav.id).build()
-    val interaction = event.replyEmbeds(embed).await()
-        .retrieveOriginal().await()
-    interaction.addReaction("👍").await()
-    interaction.addReaction("👎").await()
+
+    interaction.editOriginal("Got one!").await()
+    interaction.editOriginalEmbeds(embed).await()
+
+    val original = interaction.retrieveOriginal().await()
+    original.addReaction("👍").await()
+    original.addReaction("👎").await()
 }

@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 
 suspend fun JDA.getUser(userId: String): User = this.getUserById(userId) ?: this.retrieveUserById(userId).await()
 
@@ -23,7 +23,7 @@ suspend fun getTopAuthors(favs: Collection<Fav>, jda: JDA): Collection<String> =
         .take(5)
         .map { entry ->
             val name = jda.getUser(entry.key).name
-            "**${name}**: ${entry.value}"
+            "$name: ${entry.value}"
         }
 
 fun getTopTags(favs: Collection<Fav>): Collection<String> {
@@ -39,7 +39,7 @@ fun getTopTags(favs: Collection<Fav>): Collection<String> {
     return tagCount.entries
         .sortedByDescending { it.value }
         .take(5)
-        .map { entry -> "**${entry.key}**: ${entry.value}" }
+        .map { entry -> "${entry.key}: ${entry.value}" }
 }
 
 suspend fun getTopUsed(favs: Collection<Fav>, jda: JDA): Collection<String> {
@@ -48,13 +48,13 @@ suspend fun getTopUsed(favs: Collection<Fav>, jda: JDA): Collection<String> {
         .take(5)
         .map {
             val name = jda.getUser(it.authorId).name
-            "**${it.id} ($name)**: ${it.used}"
+            "${it.id} ($name): ${it.used}"
         }
 }
 
 suspend fun Collection<Fav>.toVotesList(jda: JDA): Collection<String> = this.map {
     val name = jda.getUser(it.authorId).name
-    "**${it.id} ($name):** ${it.votes.withExplicitSign()}"
+    "${it.id} ($name): ${it.votes.withExplicitSign()}"
 }
 
 private fun Int.withExplicitSign(): String = when (this > 0) {
@@ -65,7 +65,7 @@ private fun Int.withExplicitSign(): String = when (this > 0) {
 suspend fun retrieveMessageWithErrorHandling(
     fav: Fav,
     storage: Storage,
-    event: SlashCommandInteractionEvent,
+    interaction: InteractionHook,
     channel: MessageChannel
 ): Message? {
     try {
@@ -73,7 +73,7 @@ suspend fun retrieveMessageWithErrorHandling(
     } catch (e: Exception) {
         with(e.message.orEmpty()) {
             if (contains("10008: Unknown Message")) {
-                event.replyError(
+                interaction.replyError(
                     "Fav [${fav.id}] points to a removed message.\n"
                             + "It will be removed so this doesn't happen again.",
                     fav.id
@@ -82,7 +82,7 @@ suspend fun retrieveMessageWithErrorHandling(
             }
 
             if (contains("Missing permission")) {
-                event.replyError(
+                interaction.replyError(
                     "No permission to channel:\n${fav.channelUrl()}\nPlease check my privileges.",
                     fav.id
                 )
@@ -101,7 +101,7 @@ suspend fun EmbedBuilder.writeStats(favs: Collection<Fav>, jda: JDA) = coroutine
     val lowestVotes = async { favs.sortedBy { it.votes }.take(5).toVotesList(jda) }
 
     with(this) {
-        addField("Counts", "**Saved**: ${favs.count()}\n**Posted**: ${usedCount.await()}", true)
+        addField("Counts", "Saved: ${favs.count()}\nPosted: ${usedCount.await()}", true)
         addField("Top authors", topAuthors.await().joinToString("\n"), true)
         addField("Top tags", topTags.await().joinToString("\n"), true)
         addField("Top posted", topUsed.await().joinToString("\n"), true)

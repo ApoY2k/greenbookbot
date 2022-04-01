@@ -111,7 +111,9 @@ class ReactionListener(
         val message = event.retrieveMessage().await()
         val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
         val fav = storage.getFav(favId) ?: return
-        storage.upvote(fav)
+        if (fav.userId != event.userId) {
+            storage.upvote(fav)
+        }
     }
 
     private suspend fun downvote(event: GenericMessageReactionEvent) {
@@ -121,6 +123,8 @@ class ReactionListener(
         val message = event.retrieveMessage().await()
         val favId = message.embeds.firstOrNull()?.footer?.text.orEmpty()
         val fav = storage.getFav(favId) ?: return
-        storage.downvote(fav)
+        if (fav.userId != event.userId) {
+            storage.downvote(fav)
+        }
     }
 }

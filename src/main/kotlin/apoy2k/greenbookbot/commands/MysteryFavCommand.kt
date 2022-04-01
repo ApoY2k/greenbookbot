@@ -24,26 +24,31 @@ suspend fun executeMysteryFavCommand(storage: Storage, event: SlashCommandIntera
         else -> null
     }
 
+    val interaction = event.reply("Fetching candidate...").await()
+
     val candidates = storage
         .getFavs(userId, event.guild?.id, emptyList())
         .filter { guildIds.contains(it.guildId) }
 
     val fav = candidates.weightedRandom()
-        ?: return event.replyError("No favs found")
+        ?: return interaction.replyError("No favs found")
 
     val guild = event.jda.guilds
         .firstOrNull { it.id == fav.guildId }
-        ?: return event.replyError("Guild not found:\n${fav.guildUrl()}", fav.id)
+        ?: return interaction.replyError("Guild not found:\n${fav.guildUrl()}", fav.id)
     val channel = guild.getTextChannelById(fav.channelId)
         ?: guild.getThreadChannelById(fav.channelId)
-        ?: return event.replyError("Channel not found:\n${fav.channelUrl()}", fav.id)
+        ?: return interaction.replyError("Channel not found:\n${fav.channelUrl()}", fav.id)
 
-    val message = retrieveMessageWithErrorHandling(fav, storage, event, channel) ?: return
+    val message = retrieveMessageWithErrorHandling(fav, storage, interaction, channel) ?: return
     val embed = EmbedBuilder().forMessage(message, fav.id)
         .setAuthor("Mystery Fav", message.jumpUrl)
         .build()
-    val interaction = event.replyEmbeds(embed).await()
-        .retrieveOriginal().await()
-    interaction.addReaction("👍").await()
-    interaction.addReaction("👎").await()
+
+    interaction.editOriginal("Got one!").await()
+    interaction.editOriginalEmbeds(embed).await()
+
+    val original = interaction.retrieveOriginal().await()
+    original.addReaction("👍").await()
+    original.addReaction("👎").await()
 }

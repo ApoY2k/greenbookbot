@@ -52,9 +52,12 @@ class CommandListener(
                 else -> Unit
             }
         } catch (e: Exception) {
-            event.replyError("Whoopsie (╯°□°）╯︵ ┻━┻\n${e.message ?: "Unknown error"}")
+            val interaction = when (event.isAcknowledged) {
+                true -> event.hook
+                else -> event.reply("Whoopsie (╯°□°）╯︵ ┻━┻").await()
+            }
+            interaction.replyError(e.message ?: "Unknown error")
             log.error(e.message, e)
         }
     }
-
 }

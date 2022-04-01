@@ -4,7 +4,7 @@ import apoy2k.greenbookbot.model.Fav
 import kotlinx.coroutines.future.await
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.requests.RestAction
 import org.apache.commons.rng.sampling.DiscreteProbabilityCollectionSampler
 import org.apache.commons.rng.simple.RandomSource
@@ -14,15 +14,15 @@ val RNG = RandomSource.JDK.create()!!
 
 suspend fun <T> RestAction<T>.await(): T = this.submit().await()
 
-suspend fun SlashCommandInteractionEvent.replyError(message: String, favId: String? = null) {
-    this.replyEmbeds(
+suspend fun InteractionHook.replyError(message: String, favId: String? = null) {
+    this.editOriginal("Whoopsie (╯°□°）╯︵ ┻━┻").await()
+    this.editOriginalEmbeds(
         EmbedBuilder()
             .setDescription(message)
             .setFooter(favId)
             .setColor(Color(150, 25, 25))
             .build()
     )
-        .setEphemeral(true)
         .await()
 }
 

@@ -17,10 +17,12 @@ val QuoteCommand = Commands.slash("quote", "quote message")
     )
 
 suspend fun executeQuoteCommand(event: SlashCommandInteractionEvent) {
+    val interaction = event.reply("Fetching message...").await()
+
     val messageLink = event.getOption(LINK)?.asString.orEmpty()
     val tokenizedLink = messageLink.substringAfter("/channels/", "").split("/")
     if (tokenizedLink.size != 3) {
-        return event.replyError("Invalid link format!")
+        return interaction.replyError("Invalid link format!")
     }
 
     val guildId = tokenizedLink[0]
@@ -30,8 +32,9 @@ suspend fun executeQuoteCommand(event: SlashCommandInteractionEvent) {
     val guild = event.jda.guilds.firstOrNull { it.id == guildId }
     val channel = guild?.getTextChannelById(channelId) ?: guild?.getThreadChannelById(channelId)
     val message = channel?.retrieveMessageById(messageId)?.await()
-        ?: return event.replyError("No message found at that link!")
+        ?: return interaction.replyError("No message found at that link!")
 
     val embed = EmbedBuilder().forMessage(message).build()
-    event.replyEmbeds(embed).await()
+    interaction.editOriginal("Found it!").await()
+    interaction.editOriginalEmbeds(embed).await()
 }

@@ -9,11 +9,15 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 val GuildStatsCommand = Commands.slash("serverstats", "Display server-wide fav stats")
 
 suspend fun executeGuildStats(storage: Storage, event: SlashCommandInteractionEvent) {
+    val interaction = event.reply("Fetching favs...").await()
+
     val favs = storage.getFavs(null, event.guild?.id, emptyList())
+    interaction.editOriginal("Found ${favs.size} favs, calculating stats...").await()
 
     val embed = EmbedBuilder()
         .setTitle("Server Stats")
         .writeStats(favs, event.jda)
 
-    event.replyEmbeds(embed.build()).await()
+    interaction.editOriginal("Got em!").await()
+    interaction.editOriginalEmbeds(embed.build()).await()
 }

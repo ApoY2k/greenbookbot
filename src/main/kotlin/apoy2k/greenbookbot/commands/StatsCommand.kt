@@ -17,12 +17,16 @@ val StatsCommand = Commands.slash("stats", "Display your fav stats")
     )
 
 suspend fun executeStatsCommand(storage: Storage, event: SlashCommandInteractionEvent) {
+    val interaction = event.reply("Fetching favs...").await()
+
     val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
     val favs = storage.getFavs(event.user.id, event.guild?.id, tags)
+    interaction.editOriginal("Found ${favs.size} favs, calculating stats...").await()
 
     val embed = EmbedBuilder()
         .setTitle("${event.user.name} Stats")
         .writeStats(favs, event.jda)
 
-    event.replyEmbeds(embed.build()).await()
+    interaction.editOriginal("Got em!").await()
+    interaction.editOriginalEmbeds(embed.build()).await()
 }

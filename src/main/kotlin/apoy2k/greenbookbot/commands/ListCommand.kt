@@ -26,12 +26,14 @@ val ListCommand = Commands.slash("list", "List amount of favs per tag")
     )
 
 suspend fun executeListCommand(storage: Storage, event: SlashCommandInteractionEvent) {
+    val interaction = event.reply("Fetching favs...").await()
+
     val tags = event.getOption(OPTION_TAG)?.asString.orEmpty().split(" ").filter { it.isNotBlank() }
     val guildId = event.getOption(OPTION_GUILD)?.asString ?: event.guild?.id
     val favs = storage.getFavs(event.user.id, guildId, tags)
 
     if (favs.isEmpty()) {
-        return event.replyError("No favs found")
+        return interaction.replyError("No favs found")
     }
 
     val tagCount = mutableMapOf<String, Int>()
@@ -43,9 +45,7 @@ suspend fun executeListCommand(storage: Storage, event: SlashCommandInteractionE
             }
         }
 
-    event
-        .reply("Listing total of ${tagCount.size} tags")
-        .await()
+    interaction.editOriginal("Listing total of ${tagCount.size} tags").await()
 
     tagCount
         .entries
