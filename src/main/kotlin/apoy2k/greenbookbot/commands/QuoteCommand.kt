@@ -35,6 +35,6 @@ suspend fun executeQuoteCommand(event: SlashCommandInteractionEvent) {
         ?: return interaction.replyError("No message found at that link!")
 
     val embed = EmbedBuilder().forMessage(message).build()
-    interaction.editOriginal("Found it!").await()
+    interaction.editOriginal(getQuoteMessage()).await()
     interaction.editOriginalEmbeds(embed).await()
 }

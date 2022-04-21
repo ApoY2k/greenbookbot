@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
+import kotlin.time.ExperimentalTime
 
 private val slashCommandData = listOf(
     HelpCommand,
@@ -21,6 +22,7 @@ private val slashCommandData = listOf(
     MysteryFavCommand,
 )
 
+@ExperimentalTime
 class CommandListener(
     private val storage: Storage
 ) : ListenerAdapter() {

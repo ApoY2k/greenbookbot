@@ -9,7 +9,9 @@ import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.LoggerFactory
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 fun main() = runBlocking {
     val env = Env()
     val log = LoggerFactory.getLogger("apoy2k.greenbot.Main")!!

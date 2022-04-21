@@ -109,3 +109,35 @@ suspend fun EmbedBuilder.writeStats(favs: Collection<Fav>, jda: JDA) = coroutine
         addField("Lowest votes", lowestVotes.await().joinToString("\n"), true)
     }
 }
+
+fun getFavMessage() = listOf(
+    "Got one!",
+    "Wonder what this was about",
+    "This one's for the history books",
+    "Found this gem!",
+    "Already a classic",
+    "Gee, calm down",
+    "Huh?",
+    "OK Boomer",
+    "Well that was awkward",
+    "Not sure about this one",
+    "Who even thins like this?",
+    "Anyways, here's this one",
+    "That was bait, wasn't it?",
+    "Uhm, who let this one in?",
+    "HAHAHAHAAHAHAAHAHA",
+    "You think you're funny?",
+    "Really? I mean... Really?",
+    "Oh yeah!",
+    "(☞ﾟヮﾟ)☞",
+    "(⌐■_■)"
+).random()
+
+fun getQuoteMessage() = listOf(
+    "Found it!",
+    "Hope this one is useful",
+    "Well look at that",
+    "Isn't that interesting",
+    "So that's what this was about",
+    "A quote for the history books"
+).random()

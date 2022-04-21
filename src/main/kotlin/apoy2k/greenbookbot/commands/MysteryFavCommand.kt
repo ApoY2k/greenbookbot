@@ -45,7 +45,7 @@ suspend fun executeMysteryFavCommand(storage: Storage, event: SlashCommandIntera
         .setAuthor("Mystery Fav", message.jumpUrl)
         .build()
 
-    interaction.editOriginal("Got one!").await()
+    interaction.editOriginal(getFavMessage()).await()
     interaction.editOriginalEmbeds(embed).await()
 
     val original = interaction.retrieveOriginal().await()
