@@ -121,7 +121,7 @@ fun getFavMessage() = listOf(
     "OK Boomer",
     "Well that was awkward",
     "Not sure about this one",
-    "Who even thins like this?",
+    "Who even thinks like this?",
     "Anyways, here's this one",
     "That was bait, wasn't it?",
     "Uhm, who let this one in?",
