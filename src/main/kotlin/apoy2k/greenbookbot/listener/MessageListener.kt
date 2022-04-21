@@ -14,6 +14,11 @@ class MessageListener(
     override fun onMessageReceived(event: MessageReceivedEvent) = runBlocking {
         val message = event.message
 
+        if (message.contentRaw.startsWith("\$fav") && !message.author.isBot) {
+            message.reply("It's /fav now. Get with the times, oldie ( ﾉ ﾟｰﾟ)ﾉ").await()
+            return@runBlocking
+        }
+
         if (!message.isFromType(ChannelType.PRIVATE)) {
             return@runBlocking
         }
