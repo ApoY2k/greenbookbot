@@ -126,6 +126,7 @@ fun getFavMessage() = listOf(
     "That was bait, wasn't it?",
     "Uhm, who let this one in?",
     "HAHAHAHAAHAHAAHAHA",
+    "Boar das erkärt einiges",
     "You think you're funny?",
     "Really? I mean... Really?",
     "Oh yeah!",
